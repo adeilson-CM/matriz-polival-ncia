@@ -720,9 +720,10 @@ function empAptidaoIndex(e){
   return Math.round((aptos/vals.length)*100);
 }
 function empStatus(e){
+  const vals = empAvaliadas(e);
+  if(vals.length===0) return 'na';
+  if(vals.some(v=>v>=4)) return 'apto'; // multiplicador em pelo menos 1 competência = apto p/ decisão
   const idx = empAptidaoIndex(e);
-  if(idx===null) return 'na';
-  if(idx>=70) return 'apto';
   if(idx>=35) return 'dev';
   return 'baixo';
 }
@@ -780,18 +781,25 @@ function renderKPIs(){
   // gaps criticos count
   const skillStats = computeSkillStats(active);
   const singlePerson = total===1;
-  const riskyLbl = singlePerson ? 'Competências pendentes' : 'Competências em risco';
-  const risky = singlePerson
-    ? skillStats.filter(s=>s.aptos < 1).length
-    : skillStats.filter(s=>s.aptos < STATE.settings.minAptos).length;
-  const riskyFoot = singlePerson
-    ? `faltam p/ ${esc(active[0].nome.split(' ')[0])} atingir apto`
-    : `< ${STATE.settings.minAptos} aptos`;
+  const totalSkills = STATE.skills.length;
+
+  let aptoLbl='Aptos p/ decisão', aptoVal=aptoCount, aptoFoot=total? Math.round(aptoCount/total*100)+'% do time' : '—';
+  let riskyLbl = 'Competências em risco', risky = skillStats.filter(s=>s.aptos < STATE.settings.minAptos).length, riskyFoot = `< ${STATE.settings.minAptos} aptos`;
+
+  if(singlePerson){
+    const emp = active[0];
+    const nivel4Count = STATE.skills.filter(s => (emp.vals[s.id]||0) >= 4).length;
+    aptoVal = nivel4Count;
+    aptoFoot = `nível 4 de ${totalSkills} competências`;
+    riskyLbl = 'Competências pendentes';
+    risky = totalSkills - nivel4Count;
+    riskyFoot = `ainda não estão no nível 4`;
+  }
 
   const cards = [
     {lbl:'Colaboradores (filtro)', val: total, foot: `${STATE.employees.length} no total`, color:'var(--blue-400)'},
     {lbl:'Índice de aptidão médio', val: avgIdx+'%', foot: `limiar: nível ≥ ${STATE.settings.threshold}`, color:'var(--lvl3)'},
-    {lbl:'Aptos p/ decisão', val: aptoCount, foot: total? Math.round(aptoCount/total*100)+'% do time' : '—', color:'var(--lvl4)'},
+    {lbl:aptoLbl, val: aptoVal, foot: aptoFoot, color:'var(--lvl4)'},
     {lbl:'Baixa aptidão', val: baixoCount, foot: 'requer plano de ação', color:'var(--lvl1)'},
     {lbl:'Sem avaliação', val: naCount, foot: 'nenhuma competência lançada', color:'var(--ink-400)'},
     {lbl:riskyLbl, val: risky, foot: riskyFoot, color:'var(--accent)'},
@@ -808,11 +816,12 @@ function renderKPIs(){
 function computeSkillStats(emps){
   const list = emps || filteredEmployees().filter(e=>e.ativo);
   const singlePerson = list.length===1; // filtro reduzido a 1 colaborador: risco vira "pendência individual"
+  const aptoLevel = singlePerson ? 4 : STATE.settings.threshold; // colaborador único: só conta nível 4 (Multiplicador)
   return STATE.skills.map(s=>{
     let aptos=0, avaliados=0;
     list.forEach(e=>{
       const v = e.vals[s.id];
-      if(v>0){ avaliados++; if(v>=STATE.settings.threshold) aptos++; }
+      if(v>0){ avaliados++; if(v>=aptoLevel) aptos++; }
     });
     const cobertura = avaliados? Math.round(aptos/avaliados*100) : 0;
     let risco;
@@ -856,13 +865,15 @@ function safeRenderChart(fn, canvasId){
 }
 
 function renderChartCategoriaImpl(){
-  const emps = activeEmployees();
+  const emps = filteredEmployees().filter(e=>e.ativo);
   const cats = getCats();
   const data = cats.map(cat=>{
     const skillIds = STATE.skills.filter(s=>s.cat===cat).map(s=>s.id);
-    let aptos=0, avaliados=0;
-    emps.forEach(e=> skillIds.forEach(id=>{ const v=e.vals[id]; if(v>0){avaliados++; if(v>=STATE.settings.threshold) aptos++;} }));
-    return avaliados? Math.round(aptos/avaliados*100):0;
+    const totalPossivel = skillIds.length * emps.length; // total de avaliações possíveis nessa área
+    if(totalPossivel===0) return 0;
+    let aptos=0;
+    emps.forEach(e=> skillIds.forEach(id=>{ const v=e.vals[id]||0; if(v>=STATE.settings.threshold) aptos++; }));
+    return Math.round(aptos/totalPossivel*100);
   });
   destroyChart('cat');
   const ctx = document.getElementById('chartCategoria');
@@ -872,8 +883,9 @@ function renderChartCategoriaImpl(){
       data, backgroundColor: cats.map(c=>catColor(c)), borderRadius:6, maxBarThickness:46
     }]},
     options:{
+      layout:{padding:{top:20}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>c.parsed.y+'% aptidão'}},
-        datalabels:{anchor:'end', align:'top', offset:2, color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v+'%'}
+        datalabels:{anchor:'end', align:'top', offset:2, clip:false, color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v+'%'}
       },
       scales:{ y:{beginAtZero:true, max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#eef1f6'}}, x:{grid:{display:false}} }
     }
@@ -895,7 +907,7 @@ function renderChartDonutImpl(){
 }
 
 function renderChartTurnoImpl(){
-  const emps = activeEmployees();
+  const emps = filteredEmployees().filter(e=>e.ativo);
   const turnos = [...new Set(emps.map(e=>e.turno))].sort();
   const data = turnos.map(t=>{
     let sum=0, n=0;
@@ -906,8 +918,8 @@ function renderChartTurnoImpl(){
   charts.turno = new Chart(document.getElementById('chartTurno'), {
     type:'bar',
     data:{ labels:turnos, datasets:[{ data, backgroundColor:'#4b7bd1', borderRadius:6, maxBarThickness:40 }]},
-    options:{ indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'Média: '+c.parsed.x}},
-        datalabels:{anchor:'end', align:'right', color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
+    options:{ indexAxis:'y', layout:{padding:{right:18}}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'Média: '+c.parsed.x}},
+        datalabels:{anchor:'end', align:'right', clip:false, color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
       },
       scales:{ x:{beginAtZero:true, max:4, grid:{color:'#eef1f6'}}, y:{grid:{display:false}} } }
   });
@@ -921,8 +933,8 @@ function renderChartGapsMiniImpl(){
     data:{ labels:stats.map(s=>s.name.length>26?s.name.slice(0,26)+'…':s.name), datasets:[{
       data:stats.map(s=>s.aptos), backgroundColor:stats.map(s=>s.aptos<STATE.settings.minAptos?'#e05b3c':'#ffb199'), borderRadius:5, maxBarThickness:16
     }]},
-    options:{ indexAxis:'y', plugins:{legend:{display:false},
-        datalabels:{anchor:'end', align:'right', color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
+    options:{ indexAxis:'y', layout:{padding:{right:18}}, plugins:{legend:{display:false},
+        datalabels:{anchor:'end', align:'right', clip:false, color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
       }, scales:{ x:{beginAtZero:true, grid:{color:'#eef1f6'}}, y:{ticks:{font:{size:10}}, grid:{display:false}} } }
   });
 }
@@ -936,8 +948,8 @@ function renderChartGapsFullImpl(){
       label:'Colaboradores aptos',
       data:stats.map(s=>s.aptos), backgroundColor:stats.map(s=>s.risco==='alto'?'#e05b3c':s.risco==='medio'?'#ffb199':'#8fd19e'), borderRadius:5, maxBarThickness:16
     }]},
-    options:{ indexAxis:'y', plugins:{legend:{display:false},
-        datalabels:{anchor:'end', align:'right', color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
+    options:{ indexAxis:'y', layout:{padding:{right:18}}, plugins:{legend:{display:false},
+        datalabels:{anchor:'end', align:'right', clip:false, color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
       }, scales:{ x:{beginAtZero:true, grid:{color:'#eef1f6'}}, y:{ticks:{font:{size:10.5}}, grid:{display:false}} } }
   });
 }
