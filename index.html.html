@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matriz de Competências — Logística | Gestamp Taubaté</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy-950:#0a1628;
+  --navy-900:#0f2140;
+  --navy-800:#152a4d;
+  --navy-700:#1c3660;
+  --navy-600:#26467d;
+  --blue-500:#2f5aa8;
+  --blue-400:#4b7bd1;
+  --accent:#ff6a3d;
+  --accent-dim:#ffb199;
+  --lvl0:#e2e5ea;
+  --lvl1:#f4a3a0;
+  --lvl2:#ffd166;
+  --lvl3:#8fd19e;
+  --lvl4:#2f9e57;
+  --bg:#eef1f6;
+  --card:#ffffff;
+  --ink-900:#0d1526;
+  --ink-600:#4a5568;
+  --ink-400:#8894a8;
+  --line:#dde3ec;
+  --radius:12px;
+  --shadow:0 1px 2px rgba(13,21,38,.06),0 6px 20px rgba(13,21,38,.06);
+  font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink-900);}
+body{font-size:14px;line-height:1.4;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:#c3ccdb;border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* ---------- LAYOUT ---------- */
+.app{position:relative;min-height:100vh;}
+.sidebar{
+  background:linear-gradient(180deg,var(--navy-950),var(--navy-900) 60%,var(--navy-800));
+  color:#dbe4f5;position:fixed;top:0;left:0;height:100vh;width:64px;padding:20px 10px;display:flex;flex-direction:column;gap:6px;
+  overflow:hidden;white-space:nowrap;z-index:40;transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;
+  box-shadow:2px 0 0 rgba(0,0,0,0);
+}
+.sidebar:hover{width:250px;padding:20px 14px;box-shadow:10px 0 34px rgba(6,12,26,.35);}
+.sidebar:hover .brand{padding:6px 8px 18px;}
+.sidebar-label{opacity:0;transition:opacity .12s ease;}
+.sidebar:hover .sidebar-label{opacity:1;transition:opacity .18s ease .08s;}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 4px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;transition:padding .22s;}
+.brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#ff9466);display:flex;align-items:center;justify-content:center;font-weight:800;color:#1a0d06;font-size:15px;flex:none;}
+.brand-text b{display:block;font-size:14px;color:#fff;letter-spacing:.2px;}
+.brand-text span{display:block;font-size:11px;color:#93a3c2;}
+
+.nav-group{margin-top:10px;}
+.nav-label{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:#5f7195;padding:10px 10px 6px;white-space:nowrap;}
+.navbtn{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:none;color:#c4d1ea;
+  padding:10px 10px;border-radius:9px;font-size:13.4px;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;
+}
+.navbtn svg{flex:none;opacity:.85;}
+.navbtn:hover{background:rgba(255,255,255,.06);color:#fff;}
+.navbtn.active{background:linear-gradient(90deg,rgba(255,106,61,.18),rgba(255,106,61,.03));color:#fff;box-shadow:inset 3px 0 0 var(--accent);}
+
+.side-foot{margin-top:auto;padding:10px;border-top:1px solid rgba(255,255,255,.08);}
+.side-foot .small-btn{width:100%;margin-bottom:6px;}
+.side-foot .btn{overflow:hidden;white-space:nowrap;}
+
+.main{padding:20px 26px 60px;min-width:0;margin-left:64px;transition:margin-left .22s;}
+
+/* ---------- TOPBAR ---------- */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap;}
+.topbar h1{font-size:21px;margin:0 0 3px;font-weight:800;letter-spacing:-.2px;}
+.topbar .sub{color:var(--ink-600);font-size:12.6px;}
+.topbar .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+button{font-family:inherit;}
+.btn{
+  border:1px solid var(--line);background:var(--card);color:var(--ink-900);padding:8px 13px;border-radius:9px;
+  font-size:12.8px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .12s;
+}
+.btn:hover{border-color:#b9c4d6;background:#f6f8fb;}
+.btn.primary{background:var(--navy-900);color:#fff;border-color:var(--navy-900);}
+.btn.primary:hover{background:var(--navy-800);}
+.btn.accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn.accent:hover{background:#ea5a2e;}
+.btn.danger{color:#b3261e;border-color:#f0c7c3;background:#fdf3f2;}
+.btn.danger:hover{background:#fbe6e3;}
+.btn.ghost{background:transparent;border-color:transparent;}
+.btn.small{padding:5px 9px;font-size:11.8px;border-radius:7px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* ---------- TABS ---------- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+.tab{padding:9px 4px;margin-right:18px;background:transparent;border:none;font-size:13.4px;font-weight:600;color:var(--ink-400);cursor:pointer;border-bottom:2px solid transparent;}
+.tab.active{color:var(--navy-900);border-bottom-color:var(--accent);}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ---------- KPI CARDS ---------- */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:1400px){.kpi-row{grid-template-columns:repeat(3,1fr);}}
+.kpi{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;position:relative;overflow:hidden;}
+.kpi .bar{position:absolute;left:0;top:0;bottom:0;width:4px;}
+.kpi .lbl{font-size:11px;color:var(--ink-600);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+.kpi .val{font-size:25px;font-weight:800;margin-top:5px;letter-spacing:-.5px;}
+.kpi .foot{font-size:11px;color:var(--ink-400);margin-top:4px;}
+.kpi .foot.up{color:#1f8a44;}
+.kpi .foot.down{color:#c0392b;}
+
+/* ---------- PANELS / GRID ---------- */
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-bottom:14px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:1100px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+.panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;}
+.panel h3{margin:0 0 2px;font-size:13.6px;font-weight:800;}
+.panel .desc{font-size:11.5px;color:var(--ink-400);margin-bottom:10px;}
+.chart-wrap{position:relative;height:250px;}
+.chart-wrap.tall{height:340px;}
+
+/* ---------- FILTER BAR ---------- */
+.filterbar{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filterbar .grow{flex:1;min-width:180px;}
+.f-input{
+  width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.8px;background:#fbfcfe;color:var(--ink-900);
+}
+.f-input:focus{outline:2px solid var(--blue-400);outline-offset:0;border-color:var(--blue-400);}
+select.f-input{cursor:pointer;}
+.chipset{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{
+  padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:11.8px;font-weight:600;
+  cursor:pointer;color:var(--ink-600);white-space:nowrap;transition:all .12s;
+}
+.chip:hover{border-color:#b9c4d6;}
+.chip.active{background:var(--navy-900);border-color:var(--navy-900);color:#fff;}
+.filter-label{font-size:10.5px;text-transform:uppercase;color:var(--ink-400);font-weight:700;letter-spacing:.06em;margin-right:2px;}
+.filter-count{font-size:11.5px;color:var(--ink-400);margin-left:auto;white-space:nowrap;}
+
+/* ---------- TABLES ---------- */
+.table-wrap{overflow:auto;border-radius:var(--radius);}
+table{border-collapse:collapse;width:100%;font-size:12.6px;}
+thead th{
+  position:sticky;top:0;background:var(--navy-900);color:#fff;text-align:left;padding:9px 10px;font-weight:700;
+  font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;z-index:2;
+}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;}
+tbody tr:hover{background:#f5f8fc;}
+tbody tr:nth-child(even){background:#fafbfd;}
+tbody tr:nth-child(even):hover{background:#f5f8fc;}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{background:var(--navy-800);}
+th.sortable .arrow{opacity:.5;font-size:9px;margin-left:3px;}
+
+.name-cell{font-weight:700;color:var(--ink-900);}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.8px;font-weight:700;}
+.tag.apto{background:#e3f7e8;color:#1f8a44;}
+.tag.dev{background:#fff3d6;color:#a66b00;}
+.tag.baixo{background:#fde5e2;color:#b3261e;}
+.tag.na{background:#eceff4;color:#6b7688;}
+
+/* progress bar */
+.pbar{width:90px;height:7px;border-radius:5px;background:#e7ebf2;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px;}
+.pbar > i{display:block;height:100%;border-radius:5px;}
+
+/* ---------- MATRIX HEATMAP ---------- */
+.matrix-scroll{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:var(--radius);}
+table.matrix{border-collapse:separate;border-spacing:0;}
+table.matrix th, table.matrix td{border-right:1px solid #eef1f6;border-bottom:1px solid #eef1f6;}
+table.matrix thead th{white-space:normal;max-width:90px;font-size:9.6px;text-transform:none;font-weight:700;vertical-align:bottom;padding:6px 4px;line-height:1.15;height:120px;}
+table.matrix thead th.emp-col{position:sticky;left:0;z-index:3;background:var(--navy-900);min-width:190px;max-width:190px;vertical-align:middle;}
+table.matrix thead th.rot{writing-mode:vertical-rl;transform:rotate(180deg);text-align:left;padding:6px 3px;}
+table.matrix tbody td.emp-col{
+  position:sticky;left:0;background:#fff;z-index:1;font-weight:700;border-right:2px solid var(--line);min-width:190px;max-width:190px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+table.matrix tbody tr:nth-child(even) td.emp-col{background:#fafbfd;}
+table.matrix tbody tr:hover td.emp-col{background:#eef3fb;}
+.cell-lvl{
+  width:34px;height:30px;text-align:center;cursor:pointer;font-weight:800;font-size:11.5px;color:#00000090;user-select:none;
+  transition:filter .1s;
+}
+.cell-lvl:hover{filter:brightness(0.93);outline:1.5px solid #00000030;outline-offset:-1.5px;}
+.cell-lvl.l0{background:var(--lvl0);color:#aab1bd;}
+.cell-lvl.l1{background:var(--lvl1);color:#7a1a15;}
+.cell-lvl.l2{background:var(--lvl2);color:#7a5400;}
+.cell-lvl.l3{background:var(--lvl3);color:#1c5c30;}
+.cell-lvl.l4{background:var(--lvl4);color:#fff;}
+
+.cat-band{padding:4px 6px;font-size:9.6px;font-weight:800;text-align:center;color:#fff;letter-spacing:.02em;}
+
+/* ---------- LEGEND ---------- */
+.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11.6px;color:var(--ink-600);}
+.legend .sw{width:13px;height:13px;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;}
+
+/* ---------- MODAL ---------- */
+.overlay{position:fixed;inset:0;background:rgba(10,17,32,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+.overlay.show{display:flex;}
+.modal{background:#fff;border-radius:14px;max-width:600px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.modal.wide{max-width:820px;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:2;}
+.modal-head h3{margin:0;font-size:15.5px;}
+.modal-body{padding:18px 20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:#fff;}
+.x-btn{background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-400);line-height:1;}
+.form-row{margin-bottom:12px;}
+.form-row label{display:block;font-size:11.6px;font-weight:700;color:var(--ink-600);margin-bottom:4px;}
+.form-row input,.form-row select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+.eval-cat{margin-bottom:14px;}
+.eval-cat h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-400);margin:0 0 6px;border-bottom:1px solid var(--line);padding-bottom:5px;}
+.eval-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px;font-size:12.6px;}
+.eval-row .skname{flex:1;}
+.lvl-btns{display:flex;gap:3px;}
+.lvl-btn{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--line);background:#fff;font-size:11px;font-weight:800;cursor:pointer;color:var(--ink-600);}
+.lvl-btn.sel.l0{background:var(--lvl0);border-color:var(--lvl0);color:#8a919e;}
+.lvl-btn.sel.l1{background:var(--lvl1);border-color:var(--lvl1);color:#7a1a15;}
+.lvl-btn.sel.l2{background:var(--lvl2);border-color:var(--lvl2);color:#7a5400;}
+.lvl-btn.sel.l3{background:var(--lvl3);border-color:var(--lvl3);color:#1c5c30;}
+.lvl-btn.sel.l4{background:var(--lvl4);border-color:var(--lvl4);color:#fff;}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--ink-400);}
+.empty-state svg{margin-bottom:10px;opacity:.5;}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy-900);color:#fff;padding:11px 18px;border-radius:9px;font-size:12.8px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:100;opacity:0;transform:translateY(8px);transition:all .25s;}
+.toast.show{opacity:1;transform:translateY(0);}
+
+.hint{font-size:11.3px;color:var(--ink-400);margin-top:2px;}
+.badge-count{background:var(--accent);color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 6px;margin-left:6px;}
+
+.risk-row td{vertical-align:middle;}
+.risk-name{font-weight:700;}
+.risk-cat-pill{font-size:10.3px;font-weight:700;padding:2px 7px;border-radius:6px;color:#fff;display:inline-block;}
+
+/* ---------- EDIT MODE LOCK ---------- */
+.edit-only{transition:opacity .15s;}
+body.edit-locked .edit-only{opacity:.45;}
+#btnToggleEdit{font-weight:700;}
+#btnToggleEdit.unlocked{background:#e3f7e8;border-color:#bfe8c9;color:#1f8a44;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">GT</div>
+      <div class="brand-text sidebar-label"><b>Gestamp Taubaté</b><span>Logística · PCP</span></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label sidebar-label">Painel</div>
+      <button class="navbtn active" data-view="overview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="12" width="4" height="8"/><rect x="10" y="7" width="4" height="13"/><rect x="17" y="3" width="4" height="17"/></svg>
+        <span class="sidebar-label">Visão Geral</span>
+      </button>
+      <button class="navbtn" data-view="matrix">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span class="sidebar-label">Matriz Detalhada</span>
+      </button>
+      <button class="navbtn" data-view="gaps">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86l-8.18 14.14A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        <span class="sidebar-label">Gaps &amp; Riscos</span>
+      </button>
+      <button class="navbtn" data-view="people">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="sidebar-label">Colaboradores</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label sidebar-label">Dados</div>
+      <button class="navbtn edit-only" id="btnAddPerson">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
+        <span class="sidebar-label">Incluir colaborador</span>
+      </button>
+      <button class="navbtn edit-only" id="btnAddSkill">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="sidebar-label">Incluir competência</span>
+      </button>
+      <button class="navbtn" id="btnSettings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="sidebar-label">Critérios &amp; legenda</span>
+      </button>
+    </div>
+
+    <div class="side-foot">
+      <button class="btn small" style="width:100%;margin-bottom:6px;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#dbe4f5;" id="btnExportExcel">⬇<span class="sidebar-label"> Exportar Excel</span></button>
+      <button class="btn small edit-only" style="width:100%;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:#dbe4f5;" id="btnResetData">↺<span class="sidebar-label"> Restaurar dados originais</span></button>
+      <div class="sidebar-label" style="font-size:10.3px;color:#5f7195;margin-top:10px;">Atualizado em <span id="lastUpdate">—</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <h1>Matriz de Competências — Logística</h1>
+        <div class="sub">Controle de aptidão e apoio à tomada de decisão para alocação de pessoas · Gestamp Taubaté</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnToggleEdit">🔒 Ativar edição</button>
+        <button class="btn" id="btnExportExcel2">⬇ Excel</button>
+        <button class="btn primary edit-only" id="btnAddPerson2">+ Incluir colaborador</button>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filterbar" id="filterBar">
+      <div class="grow">
+        <input class="f-input" id="fSearch" type="text" placeholder="🔍 Buscar colaborador...">
+      </div>
+      <select class="f-input" id="fTurno" style="max-width:150px;"></select>
+      <select class="f-input" id="fPosicao" style="max-width:190px;"></select>
+      <select class="f-input" id="fStatus" style="max-width:190px;">
+        <option value="todos">Status: todos</option>
+        <option value="apto">Aptos p/ decisão</option>
+        <option value="dev">Em desenvolvimento</option>
+        <option value="baixo">Baixa aptidão</option>
+        <option value="na">Sem avaliação</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-600);white-space:nowrap;">
+        <input type="checkbox" id="fAtivos" checked style="width:15px;height:15px;"> só ativos
+      </label>
+      <div class="filter-count" id="filterCount"></div>
+    </div>
+
+    <!-- ===================== VISÃO GERAL ===================== -->
+    <section class="view active" id="view-overview">
+      <div class="kpi-row" id="kpiRow"></div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Aptidão por área</h3>
+          <div class="desc">% de avaliações em nível "Apto" (≥3) ou "Multiplicador" por área de competência</div>
+          <div class="chart-wrap"><canvas id="chartCategoria"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>Distribuição de status</h3>
+          <div class="desc">Todas as avaliações do time filtrado</div>
+          <div class="chart-wrap"><canvas id="chartDonut"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Aptidão média por turno</h3>
+          <div class="desc">Média de nível de competência (0–4) por turno</div>
+          <div class="chart-wrap"><canvas id="chartTurno"></canvas></div>
+        </div>
+        <div class="panel">
+          <h3>Top 8 gaps críticos</h3>
+          <div class="desc">Competências com menor nº de colaboradores aptos</div>
+          <div class="chart-wrap"><canvas id="chartGapsMini"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Colaboradores — prontidão geral</h3>
+        <div class="desc">Clique em um colaborador para avaliar / editar competências</div>
+        <div class="table-wrap">
+          <table id="tblOverview">
+            <thead><tr>
+              <th class="sortable" data-k="nome">Colaborador</th>
+              <th class="sortable" data-k="posicao">Posição</th>
+              <th class="sortable" data-k="turno">Turno</th>
+              <th class="sortable" data-k="aptidao">Índice de aptidão</th>
+              <th class="sortable" data-k="avaliadas">Avaliadas</th>
+              <th class="sortable" data-k="status">Status</th>
+              <th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== MATRIZ DETALHADA ===================== -->
+    <section class="view" id="view-matrix">
+      <div class="panel" style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h3 style="margin-bottom:6px;">Área de competência</h3>
+            <div class="chipset" id="catChips"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <div class="legend" id="legendBox"></div>
+            <button class="btn accent small edit-only" id="btnAddSkill2">+ Nova competência</button>
+          </div>
+        </div>
+        <div class="hint">Clique numa célula para avançar de nível (0→1→2→3→4→0). Clique com o botão direito para retroceder.</div>
+      </div>
+      <div class="panel">
+        <div class="matrix-scroll">
+          <table class="matrix" id="matrixTable"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== GAPS & RISCOS ===================== -->
+    <section class="view" id="view-gaps">
+      <div class="panel" style="margin-bottom:14px;">
+        <h3>Cobertura de competências</h3>
+        <div class="desc">Competências ordenadas pelo menor número de colaboradores aptos (nível ≥ limiar de aptidão). Risco = ponto único de falha operacional. Considera os colaboradores do filtro atual.</div>
+        <div class="chart-wrap tall"><canvas id="chartGapsFull"></canvas></div>
+      </div>
+      <div class="panel">
+        <h3>Tabela de riscos por competência</h3>
+        <div class="table-wrap">
+          <table id="tblGaps">
+            <thead><tr>
+              <th class="sortable" data-k="cat">Área</th>
+              <th class="sortable" data-k="name">Competência</th>
+              <th class="sortable" data-k="aptos">Aptos</th>
+              <th class="sortable" data-k="avaliados">Avaliados</th>
+              <th class="sortable" data-k="cobertura">Cobertura</th>
+              <th class="sortable" data-k="risco">Risco</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== COLABORADORES (CRUD) ===================== -->
+    <section class="view" id="view-people">
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div>
+            <h3 style="margin-bottom:2px;">Gestão de colaboradores</h3>
+            <div class="desc" style="margin-bottom:0;">Inclua, edite, inative ou remova colaboradores da matriz</div>
+          </div>
+          <button class="btn primary edit-only" id="btnAddPerson3">+ Incluir colaborador</button>
+        </div>
+        <div class="table-wrap">
+          <table id="tblPeople">
+            <thead><tr>
+              <th class="sortable" data-k="nome">Nome</th>
+              <th class="sortable" data-k="posicao">Posição</th>
+              <th class="sortable" data-k="turno">Turno</th>
+              <th class="sortable" data-k="status">Status</th>
+              <th>Ações</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ MODAL: Incluir/Editar colaborador ============ -->
+<div class="overlay" id="modalPerson">
+  <div class="modal">
+    <div class="modal-head"><h3 id="personModalTitle">Incluir colaborador</h3><button class="x-btn" data-close="modalPerson">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Nome completo</label><input id="pfNome" type="text" placeholder="Ex: João da Silva"></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Turno</label>
+          <select id="pfTurno">
+            <option>Turno 1</option><option>Turno 2</option><option>Turno 3</option>
+            <option>2x2 A Manha</option><option>2x2 A Noite</option><option>2x2 B manha</option><option>2x2 B Noite</option>
+            <option>ADM</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Posição</label>
+          <select id="pfPosicao">
+            <option>Auxiliar de Logística</option>
+            <option>Operador de Logística I</option>
+            <option>Operador de Logística II</option>
+            <option>Assistente de Logística</option>
+            <option>Líder de Logística</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">As competências podem ser avaliadas depois, na Matriz Detalhada ou clicando em "Avaliar" na lista de colaboradores.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="modalPerson">Cancelar</button>
+      <button class="btn primary" id="btnSavePerson">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Incluir competência ============ -->
+<div class="overlay" id="modalSkill">
+  <div class="modal">
+    <div class="modal-head"><h3>Incluir competência</h3><button class="x-btn" data-close="modalSkill">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Nome da tarefa / competência</label><input id="skfNome" type="text" placeholder="Ex: EXPEDIÇÃO CONFERÊNCIA DE ROMANEIO"></div>
+      <div class="form-row">
+        <label>Área</label>
+        <select id="skfCat"></select>
+      </div>
+      <div class="form-row" id="skfNovaCatRow" style="display:none;">
+        <label>Nome da nova área</label>
+        <input id="skfNovaCat" type="text" placeholder="Ex: TRANSPORTE INTERNO">
+      </div>
+      <div class="hint">A competência entra imediatamente na Matriz Detalhada e nas tabelas de Gaps &amp; Riscos, pronta para ser avaliada por colaborador.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="modalSkill">Cancelar</button>
+      <button class="btn primary" id="btnSaveSkill">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Ativar edição / senha ============ -->
+<div class="overlay" id="modalAuth">
+  <div class="modal">
+    <div class="modal-head"><h3 id="authModalTitle">Ativar modo de edição</h3><button class="x-btn" data-close="modalAuth">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row" id="authNewRow" style="display:none;">
+        <label>Defina a senha de edição para este painel</label>
+        <input id="authNewPass" type="password" placeholder="Nova senha (mín. 4 caracteres)">
+      </div>
+      <div class="form-row" id="authPassRow">
+        <label>Senha de edição</label>
+        <input id="authPass" type="password" placeholder="Digite a senha">
+      </div>
+      <div class="hint" id="authHint"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close="modalAuth">Cancelar</button>
+      <button class="btn primary" id="btnAuthConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Avaliar colaborador ============ -->
+<div class="overlay" id="modalEval">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="evalModalTitle">Avaliar competências</h3><button class="x-btn" data-close="modalEval">✕</button></div>
+    <div class="modal-body" id="evalModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn" data-close="modalEval">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Configurações ============ -->
+<div class="overlay" id="modalSettings">
+  <div class="modal">
+    <div class="modal-head"><h3>Critérios &amp; legenda</h3><button class="x-btn" data-close="modalSettings">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Nível mínimo considerado "Apto para tomada de decisão"</label>
+        <select id="cfgThreshold">
+          <option value="2">2 — Necessita acompanhamento ou superior</option>
+          <option value="3" selected>3 — Autônomo (apto) ou superior</option>
+          <option value="4">4 — Somente Multiplicador</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Nº mínimo de colaboradores aptos por competência (alerta de risco)</label>
+        <input id="cfgMinAptos" type="number" min="1" max="20" value="2">
+      </div>
+      <div class="form-row edit-only">
+        <label>Alterar senha de edição</label>
+        <input id="cfgNewPass" type="password" placeholder="Deixe em branco para manter a atual">
+      </div>
+      <div class="eval-cat">
+        <h4>Legenda dos níveis</h4>
+        <div class="eval-row"><span class="skname"><span class="tag na" style="background:var(--lvl0);color:#7d8697;">0</span> Não avaliado</span></div>
+        <div class="eval-row"><span class="skname"><span class="tag" style="background:var(--lvl1);color:#7a1a15;">1</span> Em treinamento</span></div>
+        <div class="eval-row"><span class="skname"><span class="tag" style="background:var(--lvl2);color:#7a5400;">2</span> Necessita acompanhamento</span></div>
+        <div class="eval-row"><span class="skname"><span class="tag apto" style="background:var(--lvl3);color:#1c5c30;">3</span> Autônomo / Apto</span></div>
+        <div class="eval-row"><span class="skname"><span class="tag" style="background:var(--lvl4);color:#fff;">4</span> Multiplicador (apto para treinar)</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn primary" id="btnSaveSettings">Salvar critérios</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script id="seed-data" type="application/json">{"skills":[{"id":"s6","cat":"RECEBIMENTO","name":"RECEBIMENTO DE COMPONENTES"},{"id":"s7","cat":"RECEBIMENTO","name":"RECEBIMENTO DE BLANK's"},{"id":"s8","cat":"RECEBIMENTO","name":"RECEBIMENTO DE BOBINAS"},{"id":"s9","cat":"RECEBIMENTO","name":"RECEBIMENTO DE EMBALAGENS VAZIAS"},{"id":"s10","cat":"RECEBIMENTO","name":"RECEBIMENTO DE CONTROLE DE JANELAS"},{"id":"s11","cat":"RECEBIMENTO","name":"RECEBIMENTO DE EMPILHAMENTO DE EMBALAGENS"},{"id":"s12","cat":"RECEBIMENTO","name":"RECEBIMENTO GESTÃO DE EMBALAGENS"},{"id":"s13","cat":"RECEBIMENTO","name":"RECEBIMENTO IDENTIFICAÇÃO COM ETIQUETAS"},{"id":"s14","cat":"RECEBIMENTO","name":"RECEBIMENTO GESTÃO DE ÁREA DE CONTENÇÃO DE RACK's E EMBALAGENS DANIFICADAS"},{"id":"s15","cat":"RECEBIMENTO","name":"RECEBIMENTO PREPARAÇÃO DE CARGAS, DESCARREGAMENTO E CARREGAMENTO DE CAMINHÃO"},{"id":"s16","cat":"RECEBIMENTO","name":"RECEBIMENTO FIFO"},{"id":"s17","cat":"RECEBIMENTO","name":"RECEBIMENTO TRATATIVA DE DIVERGÊNCIAS"},{"id":"s18","cat":"RECEBIMENTO","name":"RECEBIMENTO LANÇAMENTO DE NF's"},{"id":"s19","cat":"RECEBIMENTO","name":"RECEBIMENTO ABERTURA RECLAMAÇÕES CLIENTE"},{"id":"s20","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE COMPONENTES"},{"id":"s21","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE QUIMICOS"},{"id":"s22","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE BOBINAS"},{"id":"s23","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE BLANK'S"},{"id":"s24","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE EMBALAGENS VAZIAS"},{"id":"s25","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO NO WIP"},{"id":"s26","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO NO PORTA PALETES WIP"},{"id":"s27","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO NO PORTA PALETES DISPOSITIVOS"},{"id":"s28","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO NO PORTA PALETES RÉGUAS TRANSFER"},{"id":"s29","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO NAS EXPEDIÇÕES"},{"id":"s30","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE GANCHEIRAS"},{"id":"s31","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE EMPILHAMENTO DE EMBALAGENS"},{"id":"s32","cat":"ARMAZENAMENTO","name":"KANBAN DE PRODUÇÃO"},{"id":"s33","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO DE IDENTIFICAÇÃO COM ETIQUETAS"},{"id":"s34","cat":"ARMAZENAMENTO","name":"ARMAZENAMENTO FIFO"},{"id":"s35","cat":"ABASTECIMENTO","name":"ABASTECIMENTO DE COMPONENTES"},{"id":"s36","cat":"ABASTECIMENTO","name":"ABASTECIMENTO DE BOBINAS"},{"id":"s37","cat":"ABASTECIMENTO","name":"ABASTECIMENTO DE BLANK'S"},{"id":"s38","cat":"ABASTECIMENTO","name":"ABASTECIMENTO LINHAS DE REBOCADOR"},{"id":"s39","cat":"ABASTECIMENTO","name":"ABASTECIMENTO LINHAS DE EMPILHADEIRA"},{"id":"s40","cat":"ABASTECIMENTO","name":"ABASTECIMENTO PICKING (KIT)"},{"id":"s41","cat":"ABASTECIMENTO","name":"ABASTECIMENTO PICKING ESTAMPARIA"},{"id":"s42","cat":"ABASTECIMENTO","name":"KANBAN DE PRODUÇÃO"},{"id":"s43","cat":"ABASTECIMENTO","name":"ÁREA DE CONTENÇÃO DE RACK's E EMBALAGENS DANIFICADAS"},{"id":"s44","cat":"ABASTECIMENTO","name":"ABASTECIMENTO IDENTIFICAÇÃO COM ETIQUETAS"},{"id":"s45","cat":"ABASTECIMENTO","name":"ABASTECIMENTO FIFO"},{"id":"s46","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO AUDITOR DE EMBARQUE"},{"id":"s47","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO FATURAMENTO / ENVIO DE ASN / AVISO DE EMBARQUE"},{"id":"s48","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO PACKING TOYOTA"},{"id":"s49","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO PREPARAÇÃO DE CARGAS, DESCARREGAMENTO E CARREGAMENTO DE CAMINHÃO"},{"id":"s50","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO MONITOR DE PORTARIA"},{"id":"s51","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO TRANSBORDO DE MATERIAIS"},{"id":"s52","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO EMPILHAMENTO DE EMBALAGENS"},{"id":"s53","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO ÁREA DE CONTENÇÃO DE RACK's E EMBALAGENS DANIFICADAS"},{"id":"s54","cat":"EXPEDIÇÃO","name":"EXPEDIÇÃO IDENTIFICAÇÃO COM ETIQUETAS"},{"id":"s55","cat":"OPERAÇÃO DE MÁQUINAS","name":"OPERAÇÃO DE EMPILHADEIRA FRONTAL"},{"id":"s56","cat":"OPERAÇÃO DE MÁQUINAS","name":"OPERAÇÃO DE EMPILHADEIRA RETRÁTIL"},{"id":"s57","cat":"OPERAÇÃO DE MÁQUINAS","name":"OPERAÇÃO DE REBOCADOR"},{"id":"s58","cat":"OPERAÇÃO DE MÁQUINAS","name":"OPERAÇÃO LIFT E PLATAFORMA ELEVATÓRIA"},{"id":"s59","cat":"OPERAÇÃO DE MÁQUINAS","name":"OPERAÇÃO PONTE ROLANTE I"},{"id":"s60","cat":"OPERAÇÃO DE MÁQUINAS","name":"OPERAÇÃO PONTE ROLANTE II"},{"id":"s61","cat":"OPERAÇÃO DE MÁQUINAS","name":"PIT STOP"}],"employees":[{"id":"e1","nome":"ACASSIO RIBEIRO AUGUSTO","turno":"2x2 A Noite","posicao":"Líder de Logística","ativo":true,"vals":{"s6":1,"s9":2,"s10":2,"s11":2,"s12":2,"s13":2,"s14":2,"s15":3,"s16":3,"s17":2,"s20":2,"s21":2,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":4,"s40":4,"s41":3,"s42":3,"s43":3,"s44":3,"s45":4,"s46":1,"s47":1,"s48":1,"s49":3,"s50":1,"s51":3,"s52":4,"s53":4,"s54":1,"s55":4,"s57":4}},{"id":"e2","nome":"ADRIANO BERNARDO DOS SANTOS","turno":"Turno 2","posicao":"Operador de Logística II","ativo":true,"vals":{"s46":1,"s54":2}},{"id":"e3","nome":"ADRIANO SANTOS","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":1,"s7":1,"s8":1,"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s15":3,"s16":3,"s17":2,"s18":3,"s24":3,"s25":3,"s29":3,"s31":3,"s33":3,"s34":3,"s39":3,"s44":3,"s45":3,"s46":4,"s47":4,"s49":4,"s50":4,"s51":4,"s52":4,"s53":3,"s54":4,"s55":3,"s57":3}},{"id":"e4","nome":"ALACIR SILVESTRE DE FARIA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s7":3,"s8":3,"s9":3,"s13":3,"s15":2,"s16":3,"s18":1,"s20":2,"s21":2,"s22":3,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":4,"s32":2,"s33":2,"s34":3,"s35":3,"s36":3,"s37":3,"s38":3,"s39":3,"s40":2,"s41":3,"s42":3,"s43":2,"s44":3,"s45":3,"s51":2,"s52":2,"s55":3,"s57":3,"s59":3,"s60":3}},{"id":"e5","nome":"ALAN LEONE DA SILVA","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":1,"s14":1,"s20":2,"s24":2,"s25":3,"s26":1,"s29":2,"s30":2,"s31":2,"s32":2,"s33":2,"s34":3,"s35":3,"s38":3,"s39":1,"s40":2,"s43":3,"s44":3,"s45":2,"s51":3,"s52":1,"s55":2,"s57":4}},{"id":"e6","nome":"ALESSANDRO APARECIDO TAVARES","turno":"2x2 B Noite","posicao":"Líder de Logística","ativo":true,"vals":{"s6":4,"s7":4,"s9":4,"s11":4,"s12":4,"s13":3,"s14":4,"s15":4,"s16":4,"s17":4,"s20":4,"s21":4,"s24":4,"s25":4,"s26":4,"s27":4,"s28":4,"s29":4,"s30":4,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s37":4,"s38":4,"s39":4,"s40":4,"s41":4,"s42":4,"s43":4,"s44":4,"s45":4,"s49":4,"s51":4,"s52":4,"s53":4,"s54":2,"s55":4,"s56":4,"s57":4}},{"id":"e7","nome":"ALESSANDRO DE SOUZA","turno":"2x2 A Manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":1,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":2,"s16":3,"s17":2,"s20":3,"s21":2,"s24":3,"s25":4,"s26":4,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":2,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s49":1,"s51":3,"s52":3,"s53":3,"s55":3,"s56":3,"s57":3,"s58":2}},{"id":"e8","nome":"ALEX FERNANDO BARBOSA","turno":"2x2 A Manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":2,"s8":2,"s9":2,"s10":2,"s11":2,"s12":2,"s13":2,"s14":2,"s15":2,"s16":2,"s17":2,"s18":2,"s19":2,"s20":2,"s24":2,"s25":2,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":1,"s38":3,"s39":3,"s40":3,"s41":1,"s42":3,"s43":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e9","nome":"ALEX RODRIGO","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s17":3,"s20":3,"s21":2,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e10","nome":"ALEX SANDRO CERQUEIRA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":2,"s20":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":1,"s38":3,"s39":3,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s51":2,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e11","nome":"ALEXANDRE APARECIDO DOS SANTOS DIAS","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":2,"s16":2,"s17":2,"s20":3,"s21":3,"s24":3,"s25":3,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s49":2,"s51":2,"s52":3,"s53":3,"s55":3}},{"id":"e12","nome":"ALEXANDRE DE ALMEIDA MOREIRA LOURENCO","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s16":2,"s17":3,"s20":3,"s21":1,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":1,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e13","nome":"ALEXANDRE HENRIQUE MORGADO","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":2,"s8":2,"s9":2,"s11":2,"s12":2,"s13":2,"s14":2,"s15":2,"s16":3,"s17":2,"s18":1,"s19":1,"s20":2,"s21":2,"s23":2,"s24":3,"s25":3,"s29":2,"s30":2,"s31":2,"s33":2,"s34":3,"s35":3,"s37":2,"s38":2,"s39":2,"s40":2,"s41":2,"s43":2,"s44":2,"s45":3,"s55":3,"s57":3}},{"id":"e14","nome":"ALLAN WASHINGTON DE OLIVEIRA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":2,"s29":2,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s46":2,"s47":2,"s49":3,"s50":2,"s51":2,"s52":2,"s53":2,"s54":2,"s55":3,"s56":3,"s57":3}},{"id":"e15","nome":"ALYSON MARTINS MORGADO","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":2,"s11":3,"s21":3,"s23":3,"s24":3,"s25":3,"s31":3,"s33":3,"s34":3,"s37":3,"s39":3,"s40":3,"s41":3,"s45":3,"s51":2,"s52":2,"s53":2,"s55":3,"s57":3}},{"id":"e16","nome":"ANA ELISA DE SOUZA SILVA","turno":"2x2 B Noite","posicao":"Assistente de Logística","ativo":true,"vals":{"s6":3,"s9":3,"s10":4,"s13":4,"s15":3,"s16":3,"s17":3,"s18":4,"s19":3,"s20":4,"s21":4,"s24":3,"s26":3,"s27":3,"s28":3,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s43":3,"s44":3,"s45":3,"s55":3,"s56":3,"s57":3}},{"id":"e17","nome":"ANDERSON CAMPOS ALMEIDA SANTOS","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":2,"s12":2,"s23":2,"s24":3,"s25":3,"s29":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e18","nome":"ANDRE DE JESUS FELIPE","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s20":2,"s24":2,"s25":2,"s29":3,"s30":3,"s31":3,"s32":2,"s33":3,"s34":3,"s35":2,"s38":4,"s39":2,"s40":3,"s41":2,"s42":2,"s43":3,"s44":3,"s45":3,"s51":2,"s52":2,"s53":2,"s55":3,"s57":4}},{"id":"e19","nome":"ANDRE LUIZ BERNARDINO","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s7":3,"s8":3,"s9":3,"s10":2,"s11":3,"s13":3,"s14":3,"s16":3,"s18":3,"s20":3,"s21":2,"s22":3,"s23":3,"s24":3,"s25":2,"s26":2,"s27":2,"s28":3,"s30":3,"s31":3,"s33":2,"s34":2,"s35":3,"s36":3,"s37":3,"s38":3,"s39":2,"s40":3,"s43":2,"s44":2,"s45":3,"s55":3,"s56":3}},{"id":"e20","nome":"ANDRE LUIZ DE ALMEIDA RAIMUNDO","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":2,"s11":3,"s12":2,"s15":2,"s16":3,"s23":2,"s24":2,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":2,"s34":2,"s35":3,"s37":3,"s38":3,"s39":2,"s40":3,"s41":2,"s42":2,"s43":2,"s44":3,"s45":2,"s52":2,"s53":2,"s54":2,"s55":3,"s56":3,"s57":3,"s59":3,"s60":3}},{"id":"e21","nome":"ARILSON TADEU DE OLIVEIRA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s10":1,"s11":3,"s12":1,"s14":1,"s20":1,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":1,"s33":1,"s34":3,"s35":2,"s38":3,"s39":3,"s40":3,"s41":1,"s42":3,"s43":2,"s44":3,"s45":3,"s51":3,"s52":3,"s53":2,"s55":3,"s57":3}},{"id":"e22","nome":"BRUNO HENRIQUE DE CAMARGO","turno":"2x2 A Manha","posicao":"Líder de Logística","ativo":true,"vals":{"s6":2,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":4,"s16":4,"s17":4,"s18":4,"s19":4,"s20":4,"s21":4,"s24":4,"s25":4,"s29":4,"s30":2,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s37":3,"s38":4,"s39":4,"s40":4,"s41":1,"s42":4,"s43":4,"s44":4,"s45":4,"s46":4,"s47":4,"s48":4,"s49":4,"s50":4,"s51":4,"s52":4,"s53":4,"s54":4,"s55":4,"s57":4}},{"id":"e23","nome":"BRUNO PIRES MOREIRA","turno":"2x2 B manha","posicao":"Líder de Logística","ativo":true,"vals":{"s6":4,"s7":2,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":4,"s16":4,"s17":4,"s18":2,"s19":2,"s20":4,"s21":4,"s22":3,"s23":3,"s24":4,"s25":4,"s29":4,"s30":4,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":4,"s46":4,"s47":4,"s48":4,"s49":4,"s50":4,"s51":4,"s52":4,"s53":4,"s54":4,"s55":4,"s57":4,"s61":4}},{"id":"e24","nome":"BRUNO RICARDO MACHADO RESENDE","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s10":3,"s11":3,"s12":3,"s14":3,"s15":3,"s18":3,"s24":3,"s25":3,"s29":3,"s31":3,"s32":3,"s34":3,"s37":3,"s39":3,"s44":3,"s45":3,"s46":2,"s47":2,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3}},{"id":"e25","nome":"BRUNO RODRIGO RIBAS","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":2,"s9":3,"s11":3,"s12":2,"s13":2,"s14":2,"s15":3,"s16":2,"s20":2,"s21":1,"s23":2,"s24":3,"s25":3,"s26":2,"s27":2,"s28":2,"s29":3,"s30":3,"s31":3,"s32":1,"s33":3,"s34":3,"s35":3,"s37":2,"s38":3,"s39":3,"s40":2,"s41":3,"s42":2,"s43":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":2,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":4,"s56":2,"s57":3,"s58":1}},{"id":"e26","nome":"BRUNO SILVA ANDRADE","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":2,"s11":3,"s12":2,"s14":2,"s16":3,"s20":3,"s21":2,"s23":2,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s54":3,"s55":3,"s56":3,"s57":3,"s58":3}},{"id":"e27","nome":"BRUNO VELOSO DE ANDRADE","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":2,"s16":3,"s20":3,"s23":3,"s24":3,"s25":3,"s29":2,"s30":2,"s31":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":2,"s39":2,"s40":2,"s43":3,"s44":3,"s45":3,"s55":4,"s57":3}},{"id":"e28","nome":"CARLOS EDUARDO DA SILVA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":2,"s12":2,"s13":2,"s14":2,"s15":3,"s16":2,"s20":2,"s22":2,"s23":2,"s24":2,"s25":2,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":2,"s35":2,"s37":3,"s38":2,"s39":3,"s40":3,"s41":2,"s42":3,"s43":2,"s44":3,"s45":2,"s46":2,"s47":2,"s49":3,"s50":2,"s51":3,"s52":3,"s53":2,"s54":3,"s55":4,"s57":3}},{"id":"e29","nome":"CARLOS EDUARDO DOS SANTOS","turno":"Turno 2","posicao":"Líder de Logística","ativo":true,"vals":{"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":4,"s17":4,"s18":4,"s20":4,"s24":4,"s25":4,"s29":4,"s30":4,"s31":4,"s32":3,"s33":4,"s34":4,"s35":4,"s37":4,"s38":4,"s39":4,"s40":4,"s41":4,"s42":3,"s43":4,"s44":4,"s45":4,"s46":4,"s47":4,"s48":3,"s49":4,"s50":4,"s51":4,"s52":4,"s53":4,"s54":4,"s55":4,"s57":4}},{"id":"e30","nome":"CAUE MARCUS MONTEIRO DE OLIVEIRA","turno":"Turno 1","posicao":"Operador de Logística II","ativo":true,"vals":{"s9":3,"s10":3,"s11":3,"s12":3,"s14":3,"s17":3,"s24":3,"s25":3,"s29":3,"s31":3,"s33":3,"s34":3,"s35":3,"s38":1,"s39":3,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s53":3,"s54":3,"s55":3}},{"id":"e31","nome":"CELSO SILVA JUNIOR","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":4,"s10":2,"s11":4,"s12":2,"s16":2,"s17":2,"s24":2,"s29":3,"s30":2,"s31":3,"s32":2,"s33":2,"s34":2,"s35":2,"s38":2,"s39":2,"s40":2,"s45":2,"s46":3,"s49":3,"s50":2,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e32","nome":"CILENE DAS CHAGAS FERREIRA SANTOS","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":2,"s25":2,"s29":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":2,"s38":3,"s39":2,"s40":3,"s43":3,"s44":3,"s45":2,"s46":3,"s47":3,"s48":4,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":2,"s57":4}},{"id":"e33","nome":"CLAUDEMIR ALENCAR DE MOURA","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s24":3,"s25":3,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e34","nome":"CLAUDEMIR LUIZ DAS GRACAS","turno":"ADM","posicao":"Operador de Logística I","ativo":true,"vals":{"s25":3,"s29":3,"s31":3,"s33":3,"s34":3,"s35":3,"s37":3,"s39":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e35","nome":"CLAUDIO ROBERTO DOS SANTOS","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":3,"s11":3,"s12":3,"s13":2,"s14":3,"s15":2,"s16":3,"s20":2,"s21":2,"s24":3,"s25":2,"s27":3,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":2,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":2}},{"id":"e36","nome":"CLEITON CEZAR VAZ DE GOUVEA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s23":1,"s24":2,"s25":3,"s29":2,"s30":3,"s31":3,"s32":1,"s33":3,"s34":3,"s35":2,"s37":1,"s38":3,"s39":3,"s40":3,"s41":1,"s42":1,"s43":2,"s44":3,"s45":3,"s51":1,"s55":4,"s57":4}},{"id":"e37","nome":"CLEMILSON CORREA LEITE","turno":"2x2 B Noite","posicao":"Operador de Logística II","ativo":true,"vals":{"s7":3,"s8":3,"s9":3,"s13":3,"s15":3,"s18":3,"s20":3,"s22":3,"s23":3,"s24":3,"s25":3,"s27":3,"s29":3,"s33":3,"s34":3,"s35":2,"s36":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":2,"s42":3,"s43":2,"s44":3,"s45":3,"s52":2,"s53":2,"s54":2,"s55":3,"s57":3}},{"id":"e38","nome":"CLODOALDO DONIZETE COSTA","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":3,"s8":3,"s9":3,"s10":2,"s11":3,"s12":3,"s13":3,"s14":2,"s15":3,"s16":2,"s17":2,"s18":2,"s20":3,"s22":3,"s23":3,"s24":2,"s25":2,"s29":2,"s32":3,"s33":2,"s34":2,"s35":2,"s36":3,"s37":3,"s38":2,"s39":3,"s40":3,"s41":2,"s42":2,"s43":2,"s44":2,"s45":2,"s51":2,"s52":2,"s53":2,"s54":1,"s55":3,"s56":2,"s57":4,"s59":3,"s60":3}},{"id":"e39","nome":"CRISTIANO CEZAR GONCALVES","turno":"Turno 1","posicao":"Operador de Logística II","ativo":true,"vals":{"s9":3,"s11":3,"s20":3,"s23":3,"s24":3,"s25":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s39":3,"s41":3,"s44":3,"s45":3,"s55":3}},{"id":"e40","nome":"DANIEL DA CRUZ","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":2,"s11":2,"s14":2,"s20":3,"s21":3,"s23":3,"s24":3,"s25":3,"s29":3,"s31":3,"s32":2,"s33":2,"s34":2,"s35":2,"s37":3,"s38":3,"s39":3,"s40":3,"s41":2,"s42":2,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e41","nome":"DAIVID BALTRUSH","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":3,"s12":3,"s13":3,"s14":3,"s16":3,"s20":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":2,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s49":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":1}},{"id":"e42","nome":"DANIEL FABIANO DE OLIVEIRA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":1,"s11":2,"s12":1,"s24":3,"s25":2,"s29":2,"s30":2,"s31":2,"s32":2,"s33":2,"s34":3,"s35":3,"s38":3,"s39":2,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":1,"s55":2,"s57":3}},{"id":"e43","nome":"DANILO CAMARGO","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":2,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s49":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e44","nome":"DANILO HENRIQUE AMORIM","turno":"2x2 A Manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s16":3,"s20":3,"s21":2,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3}},{"id":"e45","nome":"DAVI MOUTINHO DOS SANTOS","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":2,"s11":3,"s12":3,"s13":3,"s14":3,"s15":2,"s16":3,"s20":3,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":2,"s39":4,"s40":3,"s41":3,"s43":3,"s44":3,"s45":3,"s49":2,"s51":3,"s52":3,"s53":3,"s54":3,"s55":4}},{"id":"e46","nome":"DIDERNEI ALVES MOREIRA","turno":"2x2 B manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":2,"s11":3,"s12":2,"s13":3,"s14":3,"s15":2,"s16":3,"s20":2,"s21":2,"s23":2,"s24":3,"s25":3,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":2,"s38":3,"s39":2,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e47","nome":"DIEGO APARECIDO DE SOUZA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s33":2,"s34":2,"s35":3,"s38":3,"s39":3,"s40":3,"s43":3,"s44":3,"s45":3,"s51":3,"s55":4,"s57":4}},{"id":"e48","nome":"DIEGO LEANDRO SERAFIM","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":4,"s7":3,"s8":3,"s9":4,"s10":4,"s11":3,"s12":3,"s13":4,"s14":4,"s15":4,"s16":4,"s18":3,"s20":4,"s21":3,"s22":3,"s23":3,"s24":4,"s25":3,"s26":3,"s27":3,"s28":3,"s29":4,"s31":3,"s32":2,"s33":3,"s34":4,"s35":3,"s36":2,"s37":4,"s38":4,"s39":4,"s40":4,"s41":4,"s42":4,"s43":3,"s44":3,"s45":4,"s46":4,"s47":4,"s49":4,"s50":4,"s51":4,"s52":4,"s53":4,"s54":4,"s55":4,"s56":4,"s57":4,"s58":2,"s59":2,"s61":4}},{"id":"e49","nome":"DIOGO JONATHAN DA SILVA","turno":"2x2 A Noite","posicao":"Líder de Logística","ativo":true,"vals":{"s9":2,"s11":3,"s24":3,"s25":2,"s30":3,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e50","nome":"DOUGLAS RICARDO PEDROSO","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s10":1,"s11":1,"s14":3,"s15":1,"s18":1,"s24":3,"s25":3,"s26":1,"s27":1,"s28":1,"s29":3,"s30":3,"s31":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s43":3,"s45":3,"s46":1,"s47":1,"s49":1,"s50":1,"s51":2,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3}},{"id":"e51","nome":"DOUGLAS SILVA GOMES","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s16":2,"s23":1,"s24":2,"s25":2,"s29":2,"s30":2,"s31":2,"s34":2,"s35":2,"s38":3,"s39":2,"s40":3,"s43":2,"s44":1,"s45":3,"s46":2,"s50":2,"s51":2,"s52":3,"s53":2,"s54":3,"s55":3,"s57":3}},{"id":"e52","nome":"EDER LUIZ DA SILVA","turno":"Turno 3","posicao":"Operador de Logística II","ativo":true,"vals":{"s9":3,"s10":3,"s11":3,"s12":2,"s13":3,"s14":3,"s15":3,"s16":3,"s17":3,"s18":3,"s19":2,"s20":2,"s23":1,"s24":3,"s25":3,"s26":2,"s29":3,"s31":3,"s33":3,"s34":3,"s37":3,"s38":3,"s39":2,"s41":4,"s43":2,"s44":2,"s45":2,"s46":3,"s47":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":4,"s56":3,"s57":1}},{"id":"e53","nome":"EDSON LARA AMANTE","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s24":3,"s25":3,"s29":3,"s31":3,"s33":3,"s34":3,"s37":3,"s39":3,"s40":3,"s41":3,"s45":3,"s49":3,"s51":3,"s52":3,"s54":2,"s55":3}},{"id":"e54","nome":"ELIAS EVANIL DE SOUZA","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":1,"s7":1,"s8":1,"s9":3,"s11":3,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s49":2,"s51":3,"s52":3,"s55":3,"s57":3}},{"id":"e55","nome":"EMERSON DE JESUS SANTOS","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s14":2,"s15":4,"s16":3,"s17":2,"s20":3,"s21":3,"s24":3,"s25":2,"s26":2,"s29":3,"s31":3,"s33":3,"s34":3,"s35":3,"s39":3,"s40":3,"s45":3,"s51":3,"s52":3,"s53":3,"s55":3,"s56":3,"s57":3}},{"id":"e56","nome":"EMERSON JOSE DOS SANTOS","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":1,"s7":1,"s9":2,"s14":1,"s15":2,"s16":3,"s17":1,"s20":1,"s22":1,"s24":2,"s29":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":2,"s37":2,"s38":3,"s39":3,"s40":3,"s41":3,"s42":2,"s43":2,"s44":2,"s45":3,"s46":1,"s49":3,"s52":3,"s53":1,"s54":2,"s55":3,"s56":3,"s57":3}},{"id":"e57","nome":"FABIO JUNIOR BRAGA","turno":"Turno 2","posicao":"Operador de Logística II","ativo":true,"vals":{"s6":3,"s7":3,"s8":3,"s9":3,"s10":3,"s11":3,"s13":3,"s14":3,"s15":3,"s16":3,"s18":3,"s20":3,"s21":3,"s22":3,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s31":3,"s33":3,"s34":3,"s35":3,"s36":3,"s37":3,"s39":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s58":3,"s59":3,"s60":3}},{"id":"e58","nome":"FAGNER ALVES PEREIRA","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s7":3,"s8":3,"s9":3,"s10":2,"s11":3,"s13":3,"s14":3,"s15":3,"s16":3,"s17":2,"s18":3,"s20":2,"s21":2,"s22":3,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s36":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3,"s58":3,"s59":3,"s60":3}},{"id":"e59","nome":"GABRIEL LEITE DOS SANTOS","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3}},{"id":"e60","nome":"GISELE FERNANDA DA SILVA RONDON","turno":"Turno 1","posicao":"Líder de Logística","ativo":true,"vals":{"s9":4,"s11":4,"s12":4,"s13":4,"s14":4,"s24":4,"s25":4,"s26":4,"s27":3,"s28":3,"s29":4,"s30":4,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s38":4,"s39":4,"s40":4,"s41":3,"s42":4,"s43":4,"s44":4,"s45":4,"s48":4,"s51":4,"s52":4,"s53":4,"s54":3,"s55":4,"s56":4,"s57":4,"s61":4}},{"id":"e61","nome":"GILSON DE ANDRADE REZENDE NETO","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s17":2,"s18":3,"s19":2,"s24":3,"s25":3,"s29":3,"s31":3,"s34":3,"s35":2,"s38":3,"s39":1,"s40":3,"s43":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":2,"s57":3}},{"id":"e62","nome":"GILBERTO LUIZ SILVA DE PAULA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s20":2,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e63","nome":"GLAUCO ROGER RODRIGUES","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":3,"s13":3,"s14":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e64","nome":"HENRIQUE ALVES DOS SANTOS","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":2,"s8":2,"s9":3,"s11":3,"s12":2,"s13":2,"s14":2,"s15":2,"s16":2,"s18":2,"s20":2,"s21":2,"s22":3,"s23":3,"s24":3,"s25":3,"s26":2,"s27":2,"s28":2,"s29":3,"s30":2,"s31":3,"s33":2,"s34":3,"s35":2,"s36":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s43":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3,"s59":3,"s60":3}},{"id":"e65","nome":"ISAIAS DE FARIA LORENZONI","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s14":3,"s15":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e66","nome":"IVAN XAVIER LUIZ JUNIOR","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s14":3,"s15":3,"s31":3,"s39":2,"s40":2,"s41":2,"s43":3,"s45":2,"s55":3}},{"id":"e67","nome":"JEAN CESAR DOS SANTOS","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s12":3,"s20":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e68","nome":"JEFERSON FERREIRA DE OLIVEIRA","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":1,"s9":3,"s11":3,"s12":3,"s13":1,"s14":3,"s15":2,"s16":1,"s20":1,"s21":1,"s23":1,"s24":3,"s25":2,"s29":3,"s30":3,"s31":3,"s33":3,"s34":1,"s35":2,"s38":1,"s39":1,"s40":2,"s43":3,"s44":2,"s45":2,"s49":1,"s51":3,"s54":1,"s55":3,"s57":3}},{"id":"e69","nome":"JOAO MARCOS RAMOS DE MORAIS","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s11":3,"s12":3,"s13":2,"s14":3,"s15":2,"s16":3,"s20":3,"s21":1,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":3,"s50":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e70","nome":"JOAO FELIPE SEVERIANO MOLINA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":1,"s9":1,"s10":1,"s11":2,"s13":1,"s14":1,"s15":1,"s16":1,"s20":1,"s23":1,"s24":1,"s29":1,"s30":1,"s31":1,"s32":1,"s33":1,"s34":1,"s35":1,"s37":1,"s38":1,"s39":1,"s40":1,"s41":1,"s42":1,"s44":1,"s45":1,"s46":1,"s47":3,"s48":3,"s49":1,"s50":3,"s51":1,"s52":1,"s53":1,"s54":2,"s55":1,"s57":1}},{"id":"e71","nome":"JOAO PAULO SIQUEIRA DA SILVA","turno":"Turno 1","posicao":"Operador de Logística II","ativo":true,"vals":{"s24":3,"s29":3,"s31":3,"s33":3,"s34":3,"s39":3,"s44":3,"s46":2,"s49":3,"s51":3,"s52":3,"s53":3,"s54":2,"s55":3}},{"id":"e72","nome":"JONATA ALVES FERREIRA","turno":"Turno 1","posicao":"Operador de Logística II","ativo":true,"vals":{"s6":3,"s7":3,"s8":4,"s9":3,"s10":3,"s11":3,"s12":3,"s13":4,"s15":3,"s16":4,"s18":3,"s20":3,"s22":4,"s23":4,"s24":3,"s27":3,"s28":3,"s31":3,"s33":3,"s34":3,"s35":3,"s36":4,"s37":4,"s41":3,"s44":3,"s45":3,"s55":3,"s56":3,"s58":3}},{"id":"e73","nome":"JOSE HENRIQUE PEREIRA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":4,"s7":4,"s8":4,"s9":3,"s10":2,"s11":3,"s12":2,"s13":3,"s14":2,"s15":2,"s16":3,"s20":3,"s21":2,"s22":3,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":2,"s30":3,"s31":3,"s33":3,"s34":3,"s35":3,"s36":4,"s37":3,"s38":2,"s39":3,"s40":2,"s42":2,"s43":2,"s44":3,"s45":3,"s46":1,"s49":2,"s50":2,"s51":2,"s52":2,"s53":2,"s54":2,"s55":4,"s56":4,"s57":3,"s59":4,"s60":4}},{"id":"e74","nome":"JOSE FERNANDES MARIA","turno":"Turno 2","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s9":2,"s11":2,"s20":2,"s24":2,"s25":1,"s30":3,"s31":2,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":2,"s40":3,"s42":3,"s43":2,"s44":3,"s45":3,"s55":2,"s57":3}},{"id":"e75","nome":"JOSIMAR GERMANIO DA SILVA","turno":"2x2 B manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":1,"s10":1,"s11":1,"s16":1,"s23":2,"s24":2,"s32":2,"s33":1,"s34":2,"s37":2,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":2,"s44":2,"s45":3,"s46":2,"s47":2,"s48":2,"s49":2,"s50":2,"s51":3,"s52":2,"s53":2,"s54":2,"s55":3,"s57":3}},{"id":"e76","nome":"LUCAS MOREIRA FABIANO","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":2,"s14":1,"s20":2,"s24":3,"s25":3,"s29":2,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":2,"s40":2,"s42":3,"s43":3,"s44":3,"s45":3,"s51":2,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e77","nome":"LUCIANA CORREA LEITE","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s24":3,"s25":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e78","nome":"LUCIO EDUARDO MARCELINO","turno":"2x2 B Noite","posicao":"Operador de Logística II","ativo":true,"vals":{"s6":2,"s7":2,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":2,"s21":2,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s33":3,"s34":3,"s35":2,"s37":2,"s38":2,"s39":3,"s40":3,"s41":3,"s43":3,"s44":3,"s45":3,"s46":1,"s47":1,"s49":1,"s50":1,"s52":2,"s53":2,"s54":1,"s55":3,"s57":3}},{"id":"e79","nome":"LUIS EDUARDO DA ROSA","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{}},{"id":"e80","nome":"LUIZ ALVES DOS SANTOS JUNIOR","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s7":3,"s8":3,"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s17":3,"s18":3,"s19":3,"s20":3,"s21":3,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":2,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s50":3,"s51":3,"s52":3,"s54":3,"s55":3,"s56":3,"s57":3}},{"id":"e81","nome":"LUIZ CARLOS DA SILVA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":2,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":2,"s31":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":2,"s39":3,"s40":3,"s41":2,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s55":3,"s56":3,"s57":3}},{"id":"e82","nome":"MAXWELL DE MORAIS FERREIRA","turno":"2x2 B Noite","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":2,"s23":2,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":2,"s38":3,"s39":2,"s40":3,"s41":2,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e83","nome":"MAYCON DA COSTA SCARPA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":2,"s33":3,"s34":3,"s35":3,"s38":2,"s39":3,"s40":2,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s53":3,"s55":3}},{"id":"e84","nome":"RICARDO TAVARES","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s10":3,"s11":3,"s12":2,"s24":3,"s29":3,"s31":3,"s33":3,"s34":3,"s46":4,"s47":4,"s48":3,"s49":3,"s50":4,"s51":3,"s52":3,"s53":2,"s54":4,"s55":3}},{"id":"e85","nome":"MIGUEL CHAGAS FREIRE","turno":"2x2 A Manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s7":3,"s8":3,"s9":3,"s10":3,"s13":3,"s16":3,"s17":3,"s18":3,"s19":3,"s39":3,"s42":3,"s43":3,"s44":3,"s45":3,"s50":3,"s55":3}},{"id":"e86","nome":"NADIA SEVERIANO DE SOUZA","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s10":3,"s15":3,"s16":3,"s17":3,"s18":1,"s20":3,"s24":3,"s29":3,"s30":1,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s40":3,"s44":3,"s45":3,"s46":3,"s47":3,"s48":3,"s49":2,"s50":3,"s51":3,"s52":3,"s54":3,"s55":2,"s57":3}},{"id":"e87","nome":"NATALIA DE OLIVEIRA DOMICIANO","turno":"ADM","posicao":"Assistente de Logística","ativo":true,"vals":{"s9":3,"s11":3,"s23":3,"s24":3,"s25":3,"s29":3,"s31":3,"s37":3,"s38":3,"s39":3,"s40":3,"s49":3,"s51":3,"s52":3,"s54":3,"s55":3,"s57":3}},{"id":"e88","nome":"NATANA CRISTINA DOS SANTOS","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":3,"s16":3,"s20":3,"s21":2,"s23":1,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s34":3,"s35":3,"s37":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":2,"s44":2,"s45":3,"s46":2,"s47":2,"s50":2,"s51":2,"s52":2,"s53":2,"s54":2,"s55":2,"s57":3}},{"id":"e89","nome":"NILTON JUNIOR BENTO","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s14":3,"s15":2,"s20":2,"s21":2,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s33":2,"s34":3,"s35":2,"s38":3,"s39":3,"s41":3,"s43":2,"s45":2,"s51":3,"s52":3,"s55":3,"s57":3}},{"id":"e90","nome":"OSMILER TORRES","turno":"2x2 A Noite","posicao":"Operador de Logística II","ativo":true,"vals":{"s6":3,"s7":3,"s8":3,"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":2,"s22":3,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s36":3,"s37":3,"s38":3,"s39":2,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3,"s59":3,"s60":3}},{"id":"e91","nome":"PAULO ALBERTO VAZ DE ALMEIDA JUNIOR","turno":"2x2 A Manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s11":3,"s12":1,"s13":2,"s14":3,"s20":3,"s21":1,"s24":3,"s25":2,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e92","nome":"PAULO HENRIQUE COUTO FARIA","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s17":3,"s20":3,"s21":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s46":3,"s49":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3}},{"id":"e93","nome":"PEDRO VINICIUS EMBOAVA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":3,"s11":3,"s12":1,"s13":3,"s14":3,"s16":3,"s20":3,"s21":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":4,"s38":4,"s39":4,"s40":4,"s42":3,"s43":4,"s44":3,"s45":4,"s55":4,"s56":2,"s57":3}},{"id":"e94","nome":"RAFAEL RENO DE ARAUJO","turno":"ADM","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s10":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s23":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3}},{"id":"e95","nome":"RANIERI DOS SANTOS LOPES","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":1,"s9":2,"s11":2,"s12":1,"s20":3,"s21":3,"s23":3,"s24":3,"s25":3,"s31":3,"s33":3,"s34":3,"s35":3,"s37":3,"s39":3,"s41":3,"s43":1,"s44":3,"s45":3,"s55":3}},{"id":"e96","nome":"REGIS EDUARDO GONCALVES","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s19":2,"s20":3,"s21":2,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":2,"s41":3,"s43":3,"s44":3,"s45":3,"s53":3,"s55":3,"s56":3,"s57":3}},{"id":"e97","nome":"REGIS SADAO MACIEL TAKAYAMA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":3,"s11":3,"s12":2,"s14":2,"s20":2,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":2,"s34":3,"s35":3,"s37":3,"s38":2,"s39":3,"s40":2,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":2,"s52":3,"s53":3,"s55":3,"s57":3}},{"id":"e98","nome":"RICARDO GONCALVES","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":1,"s11":1,"s14":1,"s23":1,"s24":2,"s25":2,"s26":1,"s27":1,"s28":1,"s29":2,"s30":3,"s31":2,"s33":2,"s34":2,"s35":2,"s37":2,"s38":1,"s39":3,"s40":1,"s41":2,"s43":2,"s44":2,"s45":2,"s51":1,"s52":2,"s55":4,"s56":2,"s57":1}},{"id":"e99","nome":"RODRIGO ANDRADE DA FONSECA","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":3,"s11":3,"s12":2,"s15":3,"s16":3,"s20":2,"s23":2,"s24":3,"s29":3,"s30":3,"s31":3,"s33":3,"s34":3,"s35":2,"s37":2,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s46":3,"s49":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e100","nome":"RODRIGO FERNANDES LEMES","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s9":2,"s11":2,"s12":2,"s14":1,"s15":1,"s20":2,"s24":2,"s25":2,"s30":2,"s31":2,"s32":2,"s33":2,"s34":3,"s35":3,"s38":2,"s39":3,"s40":3,"s41":2,"s42":3,"s43":2,"s44":3,"s45":3,"s51":2,"s52":2,"s53":1,"s55":3,"s57":3}},{"id":"e101","nome":"RODRIGO RIBEIRO UCHOAS","turno":"2x2 B manha","posicao":"Operador de Logística I","ativo":true,"vals":{"s14":3,"s20":3,"s24":3,"s25":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s55":3,"s56":1,"s57":3}},{"id":"e102","nome":"SERGIO DONIZETE BENTO","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s21":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e103","nome":"SILMARA APARECIDA ALVES","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":2,"s52":3,"s53":3,"s55":3,"s56":1,"s57":3}},{"id":"e104","nome":"VAGNER LACERDA BATISTA","turno":"Turno 2","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":2,"s7":2,"s8":2,"s9":3,"s10":1,"s11":3,"s12":2,"s13":3,"s14":3,"s15":3,"s16":3,"s17":1,"s18":1,"s20":2,"s21":2,"s22":2,"s23":2,"s24":3,"s25":2,"s29":3,"s30":3,"s31":3,"s32":1,"s33":3,"s34":3,"s35":2,"s36":2,"s37":2,"s38":2,"s39":3,"s40":2,"s41":2,"s42":2,"s43":3,"s44":3,"s45":3,"s46":1,"s47":1,"s49":3,"s50":1,"s51":3,"s52":3,"s53":3,"s54":2,"s55":3,"s56":3,"s57":2,"s59":2,"s60":3}},{"id":"e105","nome":"VALDEMIR MAURICIO DE SOUZA","turno":"Turno 2","posicao":"Líder de Logística","ativo":true,"vals":{"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":4,"s16":4,"s17":4,"s18":1,"s19":1,"s20":4,"s21":4,"s22":4,"s23":4,"s24":4,"s25":4,"s26":4,"s27":4,"s28":4,"s29":4,"s30":4,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s36":4,"s37":4,"s38":4,"s39":4,"s40":4,"s41":4,"s42":4,"s43":4,"s44":4,"s45":4,"s49":4,"s50":2,"s51":4,"s52":4,"s53":4,"s54":4,"s55":4,"s56":4,"s57":4,"s61":4}},{"id":"e106","nome":"VICTOR DA SILVA ESTEVAO","turno":"2x2 A Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s10":1,"s11":1,"s24":2,"s25":2,"s31":2,"s33":2,"s34":3,"s38":3,"s39":3,"s40":3,"s44":3,"s45":3,"s51":3,"s55":3,"s57":3}},{"id":"e107","nome":"VINICIUS MATHEUS DA SILVA MOTA","turno":"2x2 B Noite","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":4,"s16":4,"s17":4,"s18":3,"s19":4,"s20":4,"s21":4,"s22":4,"s23":4,"s24":4,"s25":4,"s26":4,"s29":4,"s31":4,"s33":4,"s34":4,"s45":4,"s46":4,"s47":4,"s48":4,"s49":4,"s50":4,"s51":4,"s52":4,"s53":4,"s54":4,"s55":3,"s57":3}},{"id":"e108","nome":"WILLIAM DE OLIVEIRA SILVA","turno":"Turno 3","posicao":"Operador de Logística I","ativo":true,"vals":{"s6":3,"s9":3,"s10":2,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s17":2,"s18":3,"s19":2,"s20":3,"s21":3,"s24":3,"s25":3,"s26":3,"s27":3,"s28":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":2,"s52":3,"s53":3,"s54":3,"s55":3,"s56":3,"s57":3}},{"id":"e109","nome":"WILLIAM FERNANDO DE OLIVEIRA SANTOS","turno":"2x2 A Manha","posicao":"Líder de Logística","ativo":true,"vals":{"s9":4,"s38":4,"s39":4,"s40":4,"s43":4,"s44":4,"s45":4,"s51":4,"s55":4,"s57":4,"s61":4}},{"id":"e110","nome":"WILLIAM FRANCA DA SILVA","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s9":3,"s12":3,"s15":3,"s24":3,"s25":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e111","nome":"WESLLEY ARILTON DOS SANTO","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":2,"s25":2,"s33":3,"s34":3,"s35":3,"s39":3,"s43":2,"s45":2,"s55":3}},{"id":"e112","nome":"MARCOS ROBERTO DE OLIVEIRA","turno":"2x2 B Noite","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s9":3,"s24":2,"s25":3,"s34":4,"s35":3,"s38":2,"s39":3,"s40":2,"s41":2,"s42":2,"s43":2,"s44":2,"s45":2,"s55":4,"s57":3}},{"id":"e113","nome":"RICARDO SIMONELLI","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":3,"s25":3,"s30":3,"s31":3,"s32":2,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s41":2,"s42":2,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e114","nome":"LUCAS GODOY","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s12":3,"s24":3,"s25":3,"s29":3,"s30":2,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":2,"s39":3,"s40":3,"s41":2,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s55":3}},{"id":"e115","nome":"FABRICIO APARECIDO PANNACE","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s38":3,"s39":2,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s51":3,"s52":3,"s53":3,"s54":3,"s55":3,"s57":3}},{"id":"e116","nome":"ADRIANA DOS SANTOS PASCOAL","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s30":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":1,"s40":3,"s42":3,"s43":1,"s44":3,"s45":3,"s55":1,"s57":3}},{"id":"e117","nome":"MARIA EDUARDA","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s38":3,"s40":3,"s42":3,"s45":3,"s55":2,"s57":3}},{"id":"e118","nome":"ANDRE lUIZ MARTINS FERREIRA","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s13":3,"s14":3,"s15":3,"s16":3,"s20":3,"s23":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s37":3,"s39":3,"s40":1,"s41":3,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s53":3,"s54":3,"s55":3}},{"id":"e119","nome":"ADRIANO ALVES TENÓRIO","turno":"Turno 1","posicao":"Operador de Logística I","ativo":true,"vals":{}},{"id":"e120","nome":"BRUNO DINIZ TAVARES","turno":"Turno 3","posicao":"Líder de Logística","ativo":true,"vals":{"s6":4,"s7":4,"s8":4,"s9":4,"s10":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":1,"s16":4,"s17":1,"s18":1,"s20":4,"s21":4,"s22":4,"s23":4,"s24":4,"s25":4,"s26":4,"s27":4,"s28":4,"s29":4,"s30":4,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s36":4,"s37":4,"s38":4,"s39":4,"s40":4,"s41":4,"s42":4,"s43":4,"s44":4,"s45":4,"s51":4,"s52":4,"s53":4,"s54":4,"s55":4,"s56":4,"s57":4,"s59":4,"s60":4}},{"id":"e121","nome":"DOUGLAS  ENEAS  QUINTILIANO DOS SANTOS","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s29":3,"s30":3,"s31":1,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s40":3,"s43":1,"s44":3,"s45":3,"s55":2,"s57":3}},{"id":"e122","nome":"SUELEN DE CAMPOS PEREIRA","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s29":1,"s33":1,"s34":1,"s46":1,"s47":1,"s48":1,"s49":1,"s50":1,"s51":1,"s52":1,"s53":1,"s54":1}},{"id":"e123","nome":"TATIANE","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s29":1,"s31":1,"s33":1,"s34":1,"s46":1,"s47":1,"s48":1,"s49":1,"s50":1,"s51":1,"s52":1,"s53":1,"s54":1,"s55":1}},{"id":"e124","nome":"JULIANA PORCIUNCULA DE OLIVERIA FELIX","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s33":1,"s34":2,"s35":2,"s38":3,"s39":2,"s40":3,"s42":3,"s44":3,"s45":3,"s52":3,"s55":3,"s57":3}},{"id":"e125","nome":"LINCOLN DA CRUZ MARINS","turno":"2x2 A Manha","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s29":2,"s30":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s40":3,"s45":3,"s57":3}},{"id":"e126","nome":"NATÁLIA CRISTIANE ANDRADE PRODRIGUES","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s30":3,"s33":3,"s34":3,"s35":3,"s38":3,"s40":3,"s45":3,"s57":3}},{"id":"e127","nome":"LUCAS RENAN RODRIGUES SANTOS","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":3,"s25":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":2,"s40":3,"s45":3,"s55":2,"s57":3}},{"id":"e128","nome":"VANESSA GOMES PEIXOTO","turno":"Turno 2","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s23":3,"s24":3,"s25":3,"s30":3,"s31":3,"s33":3,"s34":3,"s35":3,"s37":3,"s38":3,"s39":3,"s40":3,"s43":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e129","nome":"ROBSON RODRIGUES SALES","turno":"Turno 1","posicao":"Líder de Logística","ativo":true,"vals":{"s6":4,"s7":4,"s9":4,"s11":4,"s12":4,"s13":4,"s14":4,"s15":4,"s16":4,"s17":4,"s18":4,"s20":4,"s21":4,"s24":4,"s25":4,"s26":4,"s27":4,"s28":4,"s29":4,"s30":4,"s31":4,"s32":4,"s33":4,"s34":4,"s35":4,"s37":4,"s38":4,"s39":4,"s40":4,"s41":4,"s42":4,"s43":4,"s44":4,"s45":4,"s49":4,"s51":4,"s52":4,"s53":4,"s55":4,"s57":4}},{"id":"e130","nome":"PAULO GUILHERME DE ANDRADE","turno":"Turno 2","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":3,"s30":3,"s31":2,"s33":2,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s43":2,"s44":2,"s45":3,"s55":3,"s57":3}},{"id":"e131","nome":"JESSICA APARECIDA SANTANA","turno":"Turno 2","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":2,"s25":2,"s29":1,"s30":2,"s31":2,"s33":2,"s34":3,"s35":2,"s37":2,"s38":2,"s39":2,"s40":2,"s41":1,"s43":1,"s44":2,"s45":3,"s55":3,"s57":2}},{"id":"e132","nome":"ALINE CRISTINA DE ANDRADE RODRIGUES","turno":"Turno 3","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":3,"s25":2,"s29":2,"s30":2,"s31":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e133","nome":"JULIANA GOMES DA SILVA SANTOS","turno":"Turno 2","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":2,"s25":2,"s30":2,"s31":2,"s33":2,"s34":3,"s35":2,"s38":3,"s39":2,"s40":2,"s43":2,"s44":2,"s45":3,"s55":3,"s57":3}},{"id":"e134","nome":"LETÍCIA DE JESUS ANTÔNIO","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s30":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s40":3,"s44":3,"s45":3,"s57":3}},{"id":"e135","nome":"ROBSON LUIZ BARBOSA","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":3,"s25":3,"s30":3,"s31":3,"s33":2,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s41":2,"s43":2,"s44":3,"s45":3,"s55":3,"s57":3}},{"id":"e136","nome":"LEONARDO LOPES","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s9":3,"s11":3,"s12":3,"s14":3,"s24":3,"s25":3,"s29":3,"s30":3,"s31":3,"s32":3,"s33":3,"s34":3,"s35":3,"s38":3,"s39":3,"s40":3,"s42":3,"s43":3,"s44":3,"s45":3,"s52":3,"s55":3,"s57":3}},{"id":"e137","nome":"LEANDRO CUSTODIO","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s24":3,"s25":2,"s29":2,"s30":2,"s31":3,"s33":3,"s34":2,"s35":3,"s38":3,"s39":3,"s40":3,"s43":3,"s44":3,"s45":3,"s52":2,"s55":3,"s57":3}},{"id":"e138","nome":"GUSTAVO","turno":"Turno 1","posicao":"Auxiliar de Logística","ativo":true,"vals":{"s40":2,"s42":2,"s43":2,"s45":2,"s52":2,"s55":2}}]}</script>
+<script>
+/* ============================================================
+   Matriz de Competências — Logística | Gestamp Taubaté
+   ============================================================ */
+const SEED = JSON.parse(document.getElementById('seed-data').textContent);
+const STORE_KEY = 'gestamp_matriz_competencias_v1';
+const CAT_COLORS = {
+  'RECEBIMENTO':'#2f5aa8',
+  'ARMAZENAMENTO':'#7a5cc0',
+  'ABASTECIMENTO':'#1f8a7a',
+  'EXPEDIÇÃO':'#c0722f',
+  'OPERAÇÃO DE MÁQUINAS':'#b3384f'
+};
+function getCats(){ return [...new Set((STATE?STATE.skills:SEED.skills).map(s=>s.cat))]; }
+function catColor(cat){
+  if(CAT_COLORS[cat]) return CAT_COLORS[cat];
+  let hash=0; for(let i=0;i<cat.length;i++){ hash = cat.charCodeAt(i) + ((hash<<5)-hash); }
+  const hue = Math.abs(hash)%360;
+  return `hsl(${hue},55%,42%)`;
+}
+const LVL_LABEL = {0:'Não avaliado',1:'Em treinamento',2:'Necessita acompanhamento',3:'Autônomo / Apto',4:'Multiplicador'};
+const LVL_COLOR = {0:'#e2e5ea',1:'#f4a3a0',2:'#ffd166',3:'#8fd19e',4:'#2f9e57'};
+
+let STATE = null;      // {employees, skills, settings, meta}
+let selectedCat = null;
+let editMode = false;  // sessão: reseta a cada carregamento da página
+let sortState = {overview:{k:'nome',dir:1}, gaps:{k:'aptos',dir:1}, people:{k:'nome',dir:1}};
+if(typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined'){ Chart.register(ChartDataLabels); }
+let charts = {};
+
+/* ---------------- persistence ---------------- */
+function loadState(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(raw){
+    try{
+      const st = JSON.parse(raw);
+      if(!st.skills || !st.skills.length) st.skills = SEED.skills.map(s=>({...s}));
+      return st;
+    }catch(e){ /* fallthrough */ }
+  }
+  return seedToState();
+}
+function seedToState(){
+  return {
+    employees: SEED.employees.map(e=>({...e, vals:{...e.vals}})),
+    skills: SEED.skills.map(s=>({...s})),
+    settings: {threshold:3, minAptos:2, editPassword:null},
+    meta: {lastUpdate: new Date().toISOString()}
+  };
+}
+function saveState(){
+  STATE.meta.lastUpdate = new Date().toISOString();
+  localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+  document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ---------------- toast ---------------- */
+let toastTimer=null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+/* ---------------- edit mode / lock ---------------- */
+function applyEditModeUI(){
+  document.body.classList.toggle('edit-locked', !editMode);
+  const btn = document.getElementById('btnToggleEdit');
+  if(btn){
+    btn.textContent = editMode ? '🔓 Bloquear edição' : '🔒 Ativar edição';
+    btn.classList.toggle('unlocked', editMode);
+  }
+}
+function guardEdit(){
+  if(!editMode){ toast('Ative o modo de edição (🔒) para alterar dados'); return false; }
+  return true;
+}
+function openAuthModal(){
+  const hasPass = !!(STATE.settings.editPassword);
+  document.getElementById('authModalTitle').textContent = hasPass ? 'Ativar modo de edição' : 'Definir senha de edição';
+  document.getElementById('authNewRow').style.display = hasPass ? 'none' : 'block';
+  document.getElementById('authPassRow').style.display = hasPass ? 'block' : 'none';
+  document.getElementById('authPass').value = '';
+  document.getElementById('authNewPass').value = '';
+  document.getElementById('authHint').textContent = hasPass ? '' : 'Primeira vez: defina a senha que será pedida sempre que alguém quiser editar a matriz.';
+  openModal('modalAuth');
+}
+function confirmAuth(){
+  const hasPass = !!(STATE.settings.editPassword);
+  if(!hasPass){
+    const p = document.getElementById('authNewPass').value;
+    if(!p || p.length<4){ toast('A senha deve ter ao menos 4 caracteres'); return; }
+    STATE.settings.editPassword = p;
+    saveState();
+    editMode = true;
+    applyEditModeUI();
+    closeModal('modalAuth');
+    toast('Senha definida — edição ativada');
+    return;
+  }
+  const p = document.getElementById('authPass').value;
+  if(p === STATE.settings.editPassword){
+    editMode = true;
+    applyEditModeUI();
+    closeModal('modalAuth');
+    toast('Modo de edição ativado');
+  } else {
+    toast('Senha incorreta');
+  }
+}
+
+/* ---------------- derived calcs ---------------- */
+function skillById(id){ return STATE.skills.find(s=>s.id===id); }
+function nextSkillId(){
+  let max=0;
+  STATE.skills.forEach(s=>{ const m=/^s(\d+)$/.exec(s.id); if(m) max=Math.max(max,+m[1]); });
+  return 's'+(max+1);
+}
+
+function empAvaliadas(e){
+  return Object.values(e.vals).filter(v=>v>0);
+}
+function empAptidaoIndex(e){
+  const vals = empAvaliadas(e);
+  if(vals.length===0) return null;
+  const aptos = vals.filter(v=>v>=STATE.settings.threshold).length;
+  return Math.round((aptos/vals.length)*100);
+}
+function empStatus(e){
+  const idx = empAptidaoIndex(e);
+  if(idx===null) return 'na';
+  if(idx>=70) return 'apto';
+  if(idx>=35) return 'dev';
+  return 'baixo';
+}
+const STATUS_LABEL = {apto:'Apto p/ decisão', dev:'Em desenvolvimento', baixo:'Baixa aptidão', na:'Sem avaliação'};
+const STATUS_CLASS = {apto:'apto', dev:'dev', baixo:'baixo', na:'na'};
+
+function activeEmployees(){ return STATE.employees.filter(e=>e.ativo); }
+
+function currentFilters(){
+  return {
+    search: document.getElementById('fSearch').value.trim().toLowerCase(),
+    turno: document.getElementById('fTurno').value,
+    posicao: document.getElementById('fPosicao').value,
+    status: document.getElementById('fStatus').value,
+    ativos: document.getElementById('fAtivos').checked
+  };
+}
+function filteredEmployees(){
+  const f = currentFilters();
+  return STATE.employees.filter(e=>{
+    if(f.ativos && !e.ativo) return false;
+    if(f.search && !e.nome.toLowerCase().includes(f.search)) return false;
+    if(f.turno!=='all' && e.turno!==f.turno) return false;
+    if(f.posicao!=='all' && e.posicao!==f.posicao) return false;
+    if(f.status!=='todos' && empStatus(e)!==f.status) return false;
+    return true;
+  });
+}
+
+/* ---------------- filter selects ---------------- */
+function populateFilterSelects(){
+  const turnos = [...new Set(STATE.employees.map(e=>e.turno))].sort();
+  const posicoes = [...new Set(STATE.employees.map(e=>e.posicao))].sort();
+  const fT = document.getElementById('fTurno');
+  fT.innerHTML = '<option value="all">Turno: todos</option>' + turnos.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  const fP = document.getElementById('fPosicao');
+  fP.innerHTML = '<option value="all">Posição: todas</option>' + posicoes.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+}
+function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- KPIs ---------------- */
+function renderKPIs(){
+  const emps = filteredEmployees();
+  const active = emps.filter(e=>e.ativo);
+  const total = active.length;
+  const withEval = active.filter(e=>empAvaliadas(e).length>0);
+  const aptoCount = active.filter(e=>empStatus(e)==='apto').length;
+  const baixoCount = active.filter(e=>empStatus(e)==='baixo').length;
+  const naCount = active.filter(e=>empStatus(e)==='na').length;
+
+  let sumIdx=0, nIdx=0;
+  withEval.forEach(e=>{ const i=empAptidaoIndex(e); if(i!==null){sumIdx+=i; nIdx++;} });
+  const avgIdx = nIdx? Math.round(sumIdx/nIdx) : 0;
+
+  // gaps criticos count
+  const skillStats = computeSkillStats(active);
+  const risky = skillStats.filter(s=>s.aptos < STATE.settings.minAptos).length;
+
+  const cards = [
+    {lbl:'Colaboradores (filtro)', val: total, foot: `${STATE.employees.length} no total`, color:'var(--blue-400)'},
+    {lbl:'Índice de aptidão médio', val: avgIdx+'%', foot: `limiar: nível ≥ ${STATE.settings.threshold}`, color:'var(--lvl3)'},
+    {lbl:'Aptos p/ decisão', val: aptoCount, foot: total? Math.round(aptoCount/total*100)+'% do time' : '—', color:'var(--lvl4)'},
+    {lbl:'Baixa aptidão', val: baixoCount, foot: 'requer plano de ação', color:'var(--lvl1)'},
+    {lbl:'Sem avaliação', val: naCount, foot: 'nenhuma competência lançada', color:'var(--ink-400)'},
+    {lbl:'Competências em risco', val: risky, foot: `< ${STATE.settings.minAptos} aptos`, color:'var(--accent)'},
+  ];
+  document.getElementById('kpiRow').innerHTML = cards.map(c=>`
+    <div class="kpi"><div class="bar" style="background:${c.color}"></div>
+      <div class="lbl">${c.lbl}</div>
+      <div class="val">${c.val}</div>
+      <div class="foot">${c.foot}</div>
+    </div>`).join('');
+}
+
+/* ---------------- skill stats (for gaps) ---------------- */
+function computeSkillStats(emps){
+  const list = emps || filteredEmployees().filter(e=>e.ativo);
+  return STATE.skills.map(s=>{
+    let aptos=0, avaliados=0;
+    list.forEach(e=>{
+      const v = e.vals[s.id];
+      if(v>0){ avaliados++; if(v>=STATE.settings.threshold) aptos++; }
+    });
+    const cobertura = avaliados? Math.round(aptos/avaliados*100) : 0;
+    let risco = 'baixo';
+    if(aptos < STATE.settings.minAptos) risco='alto';
+    else if(aptos < STATE.settings.minAptos*2) risco='medio';
+    return {id:s.id, name:s.name, cat:s.cat, aptos, avaliados, cobertura, risco};
+  });
+}
+
+/* ---------------- charts ---------------- */
+function destroyChart(k){ if(charts[k]){ try{ charts[k].destroy(); }catch(e){} delete charts[k]; } }
+
+function chartsAvailable(){ return typeof Chart !== 'undefined'; }
+
+function showChartUnavailable(canvasId){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const wrap = canvas.closest('.chart-wrap');
+  if(wrap && !wrap.querySelector('.chart-fallback')){
+    const msg = document.createElement('div');
+    msg.className = 'chart-fallback';
+    msg.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink-400);font-size:11.5px;padding:12px;';
+    msg.textContent = 'Gráfico indisponível — sem conexão com a biblioteca (Chart.js). Verifique o acesso à internet.';
+    wrap.appendChild(msg);
+  }
+}
+
+function safeRenderChart(fn, canvasId){
+  try{
+    if(!chartsAvailable()){ showChartUnavailable(canvasId); return; }
+    fn();
+  }catch(err){
+    console.warn('Falha ao renderizar gráfico', canvasId, err);
+    showChartUnavailable(canvasId);
+  }
+}
+
+function renderChartCategoriaImpl(){
+  const emps = activeEmployees();
+  const cats = getCats();
+  const data = cats.map(cat=>{
+    const skillIds = STATE.skills.filter(s=>s.cat===cat).map(s=>s.id);
+    let aptos=0, avaliados=0;
+    emps.forEach(e=> skillIds.forEach(id=>{ const v=e.vals[id]; if(v>0){avaliados++; if(v>=STATE.settings.threshold) aptos++;} }));
+    return avaliados? Math.round(aptos/avaliados*100):0;
+  });
+  destroyChart('cat');
+  const ctx = document.getElementById('chartCategoria');
+  charts.cat = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:cats.map(c=>c.length>16?c.slice(0,16)+'…':c), datasets:[{
+      data, backgroundColor: cats.map(c=>catColor(c)), borderRadius:6, maxBarThickness:46
+    }]},
+    options:{
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>c.parsed.y+'% aptidão'}},
+        datalabels:{anchor:'end', align:'top', offset:2, color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v+'%'}
+      },
+      scales:{ y:{beginAtZero:true, max:100, ticks:{callback:v=>v+'%'}, grid:{color:'#eef1f6'}}, x:{grid:{display:false}} }
+    }
+  });
+}
+
+function renderChartDonutImpl(){
+  const emps = filteredEmployees().filter(e=>e.ativo);
+  let counts = {0:0,1:0,2:0,3:0,4:0};
+  emps.forEach(e=> Object.values(e.vals).forEach(v=>{ if(v>=0) counts[v] = (counts[v]||0)+1; }) );
+  destroyChart('donut');
+  charts.donut = new Chart(document.getElementById('chartDonut'), {
+    type:'doughnut',
+    data:{ labels:[1,2,3,4].map(k=>LVL_LABEL[k]), datasets:[{ data:[counts[1],counts[2],counts[3],counts[4]], backgroundColor:[LVL_COLOR[1],LVL_COLOR[2],LVL_COLOR[3],LVL_COLOR[4]], borderWidth:2, borderColor:'#fff' }]},
+    options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:11,font:{size:10.5}}},
+        datalabels:{color:'#fff', font:{weight:'700', size:11}, formatter:v=>v>0?v:''}
+      }, cutout:'62%' }
+  });
+}
+
+function renderChartTurnoImpl(){
+  const emps = activeEmployees();
+  const turnos = [...new Set(emps.map(e=>e.turno))].sort();
+  const data = turnos.map(t=>{
+    let sum=0, n=0;
+    emps.filter(e=>e.turno===t).forEach(e=> Object.values(e.vals).forEach(v=>{ if(v>0){sum+=v; n++;} }));
+    return n? +(sum/n).toFixed(2) : 0;
+  });
+  destroyChart('turno');
+  charts.turno = new Chart(document.getElementById('chartTurno'), {
+    type:'bar',
+    data:{ labels:turnos, datasets:[{ data, backgroundColor:'#4b7bd1', borderRadius:6, maxBarThickness:40 }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'Média: '+c.parsed.x}},
+        datalabels:{anchor:'end', align:'right', color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
+      },
+      scales:{ x:{beginAtZero:true, max:4, grid:{color:'#eef1f6'}}, y:{grid:{display:false}} } }
+  });
+}
+
+function renderChartGapsMiniImpl(){
+  const stats = computeSkillStats().filter(s=>s.avaliados>0).sort((a,b)=>a.aptos-b.aptos).slice(0,8);
+  destroyChart('gapsMini');
+  charts.gapsMini = new Chart(document.getElementById('chartGapsMini'), {
+    type:'bar',
+    data:{ labels:stats.map(s=>s.name.length>26?s.name.slice(0,26)+'…':s.name), datasets:[{
+      data:stats.map(s=>s.aptos), backgroundColor:stats.map(s=>s.aptos<STATE.settings.minAptos?'#e05b3c':'#ffb199'), borderRadius:5, maxBarThickness:16
+    }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false},
+        datalabels:{anchor:'end', align:'right', color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
+      }, scales:{ x:{beginAtZero:true, grid:{color:'#eef1f6'}}, y:{ticks:{font:{size:10}}, grid:{display:false}} } }
+  });
+}
+
+function renderChartGapsFullImpl(){
+  const stats = computeSkillStats().filter(s=>s.avaliados>0).sort((a,b)=>a.aptos-b.aptos).slice(0,20);
+  destroyChart('gapsFull');
+  charts.gapsFull = new Chart(document.getElementById('chartGapsFull'), {
+    type:'bar',
+    data:{ labels:stats.map(s=>s.name.length>34?s.name.slice(0,34)+'…':s.name), datasets:[{
+      label:'Colaboradores aptos',
+      data:stats.map(s=>s.aptos), backgroundColor:stats.map(s=>s.risco==='alto'?'#e05b3c':s.risco==='medio'?'#ffb199':'#8fd19e'), borderRadius:5, maxBarThickness:16
+    }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false},
+        datalabels:{anchor:'end', align:'right', color:'#2b3648', font:{weight:'700', size:10.5}, formatter:v=>v}
+      }, scales:{ x:{beginAtZero:true, grid:{color:'#eef1f6'}}, y:{ticks:{font:{size:10.5}}, grid:{display:false}} } }
+  });
+}
+
+function renderChartCategoria(){ safeRenderChart(renderChartCategoriaImpl, 'chartCategoria'); }
+function renderChartDonut(){ safeRenderChart(renderChartDonutImpl, 'chartDonut'); }
+function renderChartTurno(){ safeRenderChart(renderChartTurnoImpl, 'chartTurno'); }
+function renderChartGapsMini(){ safeRenderChart(renderChartGapsMiniImpl, 'chartGapsMini'); }
+function renderChartGapsFull(){ safeRenderChart(renderChartGapsFullImpl, 'chartGapsFull'); }
+
+/* ---------------- overview table ---------------- */
+function renderOverviewTable(){
+  const tbody = document.querySelector('#tblOverview tbody');
+  let rows = filteredEmployees().map(e=>{
+    const idx = empAptidaoIndex(e);
+    const st = empStatus(e);
+    return {e, idx, avaliadas: empAvaliadas(e).length, st};
+  });
+  const {k,dir} = sortState.overview;
+  rows.sort((a,b)=>{
+    let av,bv;
+    if(k==='nome'){av=a.e.nome;bv=b.e.nome;}
+    else if(k==='posicao'){av=a.e.posicao;bv=b.e.posicao;}
+    else if(k==='turno'){av=a.e.turno;bv=b.e.turno;}
+    else if(k==='aptidao'){av=a.idx??-1;bv=b.idx??-1;}
+    else if(k==='avaliadas'){av=a.avaliadas;bv=b.avaliadas;}
+    else if(k==='status'){av=a.st;bv=b.st;}
+    if(typeof av==='string') return av.localeCompare(bv)*dir;
+    return (av-bv)*dir;
+  });
+  document.getElementById('filterCount').textContent = `${rows.length} colaborador(es)`;
+
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">Nenhum colaborador encontrado com os filtros atuais.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(({e,idx,avaliadas,st})=>{
+    const pct = idx??0;
+    const barColor = st==='apto'?'var(--lvl4)':st==='dev'?'var(--lvl2)':st==='baixo'?'var(--lvl1)':'var(--lvl0)';
+    return `<tr>
+      <td class="name-cell">${esc(e.nome)}</td>
+      <td>${esc(e.posicao)}</td>
+      <td>${esc(e.turno)}</td>
+      <td>${idx===null?'<span style="color:var(--ink-400)">—</span>':`<span class="pbar"><i style="width:${pct}%;background:${barColor}"></i></span>${pct}%`}</td>
+      <td>${avaliadas}/${STATE.skills.length}</td>
+      <td><span class="tag ${STATUS_CLASS[st]}">${STATUS_LABEL[st]}</span></td>
+      <td><button class="btn small ghost" data-eval="${e.id}">Avaliar →</button></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------- matrix (detailed) ---------------- */
+function renderCatChips(){
+  const box = document.getElementById('catChips');
+  const cats = getCats();
+  if(!selectedCat || !cats.includes(selectedCat)) selectedCat = cats[0];
+  box.innerHTML = cats.map(c=>`<button class="chip ${c===selectedCat?'active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+  box.querySelectorAll('.chip').forEach(ch=>ch.addEventListener('click', ()=>{ selectedCat=ch.dataset.cat; renderMatrixView(); }));
+}
+function renderLegend(){
+  document.getElementById('legendBox').innerHTML = [0,1,2,3,4].map(l=>
+    `<span><span class="sw" style="background:${LVL_COLOR[l]}"></span>${l} · ${LVL_LABEL[l]}</span>`).join('');
+}
+
+function renderMatrixView(){
+  renderCatChips();
+  renderLegend();
+  const skills = STATE.skills.filter(s=>s.cat===selectedCat);
+  const emps = filteredEmployees();
+  const table = document.getElementById('matrixTable');
+
+  let thead = `<thead><tr><th class="emp-col">Colaborador (${emps.length})</th>` +
+    skills.map(s=>`<th class="rot" title="${esc(s.name)}">${esc(s.name)}</th>`).join('') + `</tr></thead>`;
+
+  let rows = emps.map(e=>{
+    const cells = skills.map(s=>{
+      const v = e.vals[s.id]||0;
+      return `<td class="cell-lvl l${v}" data-emp="${e.id}" data-skill="${s.id}" title="${esc(s.name)}: ${LVL_LABEL[v]}">${v>0?v:''}</td>`;
+    }).join('');
+    return `<tr><td class="emp-col" title="${esc(e.nome)}">${esc(e.nome)}</td>${cells}</tr>`;
+  }).join('');
+
+  if(emps.length===0){
+    rows = `<tr><td colspan="${skills.length+1}"><div class="empty-state">Nenhum colaborador encontrado com os filtros atuais.</div></td></tr>`;
+  }
+
+  table.innerHTML = thead + `<tbody>${rows}</tbody>`;
+
+  table.querySelectorAll('.cell-lvl').forEach(td=>{
+    td.addEventListener('click', ()=> cycleLevel(td.dataset.emp, td.dataset.skill, 1));
+    td.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); cycleLevel(td.dataset.emp, td.dataset.skill, -1); });
+  });
+}
+
+function cycleLevel(empId, skillId, delta){
+  if(!guardEdit()) return;
+  const e = STATE.employees.find(x=>x.id===empId);
+  if(!e) return;
+  let v = e.vals[skillId]||0;
+  v = (v + delta + 5) % 5;
+  if(v===0) delete e.vals[skillId]; else e.vals[skillId]=v;
+  saveState();
+  renderMatrixView();
+  renderAll(true);
+}
+
+/* ---------------- gaps table ---------------- */
+function renderGapsTable(){
+  let stats = computeSkillStats();
+  const {k,dir} = sortState.gaps;
+  stats.sort((a,b)=>{
+    let av=a[k], bv=b[k];
+    if(typeof av==='string') return av.localeCompare(bv)*dir;
+    return (av-bv)*dir;
+  });
+  const tbody = document.querySelector('#tblGaps tbody');
+  tbody.innerHTML = stats.map(s=>{
+    const pillColor = catColor(s.cat);
+    const riscoTag = s.risco==='alto'?'<span class="tag baixo">Alto</span>':s.risco==='medio'?'<span class="tag dev">Médio</span>':'<span class="tag apto">Baixo</span>';
+    return `<tr class="risk-row">
+      <td><span class="risk-cat-pill" style="background:${pillColor}">${esc(s.cat)}</span></td>
+      <td class="risk-name">${esc(s.name)}</td>
+      <td>${s.aptos}</td>
+      <td>${s.avaliados}</td>
+      <td>${s.avaliados? s.cobertura+'%' : '—'}</td>
+      <td>${riscoTag}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------- people CRUD table ---------------- */
+function renderPeopleTable(){
+  let rows = STATE.employees.slice();
+  const {k,dir} = sortState.people;
+  rows.sort((a,b)=>{
+    let av,bv;
+    if(k==='status'){ av=empStatus(a); bv=empStatus(b); }
+    else { av=a[k]; bv=b[k]; }
+    return String(av).localeCompare(String(bv))*dir;
+  });
+  const tbody = document.querySelector('#tblPeople tbody');
+  tbody.innerHTML = rows.map(e=>{
+    const st = empStatus(e);
+    return `<tr>
+      <td class="name-cell">${esc(e.nome)}</td>
+      <td>${esc(e.posicao)}</td>
+      <td>${esc(e.turno)}</td>
+      <td>${e.ativo?`<span class="tag ${STATUS_CLASS[st]}">${STATUS_LABEL[st]}</span>`:'<span class="tag na">Inativo</span>'}</td>
+      <td>
+        <button class="btn small ghost" data-eval="${e.id}">Avaliar</button>
+        <button class="btn small ghost edit-only" data-editp="${e.id}">Editar</button>
+        <button class="btn small edit-only ${e.ativo?'':'primary'}" data-toggle="${e.id}">${e.ativo?'Inativar':'Reativar'}</button>
+        <button class="btn small danger edit-only" data-del="${e.id}">Excluir</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------- eval modal ---------------- */
+function openEvalModal(empId){
+  const e = STATE.employees.find(x=>x.id===empId);
+  if(!e) return;
+  document.getElementById('evalModalTitle').textContent = `Avaliar — ${e.nome}`;
+  const body = document.getElementById('evalModalBody');
+  body.innerHTML = getCats().map(cat=>{
+    const skills = STATE.skills.filter(s=>s.cat===cat);
+    return `<div class="eval-cat"><h4>${esc(cat)}</h4>` + skills.map(s=>{
+      const v = e.vals[s.id]||0;
+      const btns = [0,1,2,3,4].map(l=>`<button class="lvl-btn ${v===l?'sel l'+l:''}" data-set-emp="${e.id}" data-set-skill="${s.id}" data-set-lvl="${l}">${l}</button>`).join('');
+      return `<div class="eval-row"><span class="skname">${esc(s.name)}</span><span class="lvl-btns">${btns}</span></div>`;
+    }).join('') + `</div>`;
+  }).join('');
+
+  body.querySelectorAll('[data-set-lvl]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if(!guardEdit()) return;
+      const emp = STATE.employees.find(x=>x.id===btn.dataset.setEmp);
+      const lvl = +btn.dataset.setLvl;
+      const skId = btn.dataset.setSkill;
+      if(lvl===0) delete emp.vals[skId]; else emp.vals[skId]=lvl;
+      saveState();
+      openEvalModal(empId); // re-render buttons
+      renderAll(true);
+    });
+  });
+
+  openModal('modalEval');
+}
+
+/* ---------------- person add/edit modal ---------------- */
+let editingPersonId = null;
+function openPersonModal(empId){
+  if(!guardEdit()) return;
+  editingPersonId = empId || null;
+  const title = document.getElementById('personModalTitle');
+  if(empId){
+    const e = STATE.employees.find(x=>x.id===empId);
+    title.textContent = 'Editar colaborador';
+    document.getElementById('pfNome').value = e.nome;
+    document.getElementById('pfTurno').value = e.turno;
+    document.getElementById('pfPosicao').value = e.posicao;
+  } else {
+    title.textContent = 'Incluir colaborador';
+    document.getElementById('pfNome').value = '';
+    document.getElementById('pfTurno').selectedIndex = 0;
+    document.getElementById('pfPosicao').selectedIndex = 0;
+  }
+  openModal('modalPerson');
+}
+function savePerson(){
+  const nome = document.getElementById('pfNome').value.trim();
+  const turno = document.getElementById('pfTurno').value;
+  const posicao = document.getElementById('pfPosicao').value;
+  if(!nome){ toast('Informe o nome do colaborador'); return; }
+  if(editingPersonId){
+    const e = STATE.employees.find(x=>x.id===editingPersonId);
+    e.nome=nome; e.turno=turno; e.posicao=posicao;
+    toast('Colaborador atualizado');
+  } else {
+    const id = 'e'+(Date.now());
+    STATE.employees.push({id, nome, turno, posicao, ativo:true, vals:{}});
+    toast('Colaborador incluído');
+  }
+  saveState();
+  closeModal('modalPerson');
+  populateFilterSelects();
+  renderAll(true);
+}
+
+function openSkillModal(){
+  if(!guardEdit()) return;
+  const sel = document.getElementById('skfCat');
+  const cats = getCats();
+  sel.innerHTML = cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('') + `<option value="__new__">+ Nova área…</option>`;
+  if(selectedCat && cats.includes(selectedCat)) sel.value = selectedCat;
+  document.getElementById('skfNome').value = '';
+  document.getElementById('skfNovaCat').value = '';
+  document.getElementById('skfNovaCatRow').style.display = 'none';
+  openModal('modalSkill');
+}
+function saveSkill(){
+  const nome = document.getElementById('skfNome').value.trim().toUpperCase();
+  if(!nome){ toast('Informe o nome da competência'); return; }
+  const sel = document.getElementById('skfCat');
+  let cat = sel.value;
+  if(cat==='__new__'){
+    cat = document.getElementById('skfNovaCat').value.trim().toUpperCase();
+    if(!cat){ toast('Informe o nome da nova área'); return; }
+  }
+  const id = nextSkillId();
+  STATE.skills.push({id, cat, name: nome});
+  selectedCat = cat;
+  saveState();
+  closeModal('modalSkill');
+  renderAll();
+  toast('Competência incluída em '+cat);
+}
+
+/* ---------------- modal helpers ---------------- */
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ---------------- export excel ---------------- */
+function exportExcel(){
+  if(typeof XLSX === 'undefined'){
+    toast('Biblioteca de exportação (Excel) não carregou. Verifique sua conexão com a internet e tente novamente.');
+    return;
+  }
+  try{
+    const wb = XLSX.utils.book_new();
+    const header = ['Nome','Turno','Posição','Status','Índice de Aptidão (%)', ...STATE.skills.map(s=>s.name)];
+    const rows = STATE.employees.map(e=>{
+      const idx = empAptidaoIndex(e);
+      return [e.nome, e.turno, e.posicao, e.ativo?STATUS_LABEL[empStatus(e)]:'Inativo', idx===null?'':idx, ...STATE.skills.map(s=>e.vals[s.id]||'')];
+    });
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+    ws['!cols'] = [{wch:28},{wch:14},{wch:22},{wch:16},{wch:12}, ...STATE.skills.map(()=>({wch:10}))];
+    XLSX.utils.book_append_sheet(wb, ws, 'Matriz Competências');
+
+    const statsWs = XLSX.utils.aoa_to_sheet([
+      ['Área','Competência','Aptos','Avaliados','Cobertura %','Risco'],
+      ...computeSkillStats(activeEmployees()).map(s=>[s.cat,s.name,s.aptos,s.avaliados,s.cobertura,s.risco])
+    ]);
+    statsWs['!cols']=[{wch:20},{wch:40},{wch:8},{wch:10},{wch:12},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, statsWs, 'Gaps e Riscos');
+
+    XLSX.writeFile(wb, 'matriz_competencias_logistica_gestamp.xlsx');
+    toast('Excel exportado');
+  }catch(err){
+    console.warn('Falha ao exportar Excel', err);
+    toast('Não foi possível exportar o Excel agora. Tente novamente.');
+  }
+}
+
+/* ---------------- sorting handlers ---------------- */
+function attachSortHandlers(){
+  document.querySelectorAll('#tblOverview th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      const s = sortState.overview;
+      s.dir = (s.k===k)? -s.dir : 1; s.k = k;
+      renderOverviewTable();
+    });
+  });
+  document.querySelectorAll('#tblGaps th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      const s = sortState.gaps;
+      s.dir = (s.k===k)? -s.dir : 1; s.k = k;
+      renderGapsTable();
+    });
+  });
+  document.querySelectorAll('#tblPeople th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      const s = sortState.people;
+      s.dir = (s.k===k)? -s.dir : 1; s.k = k;
+      renderPeopleTable();
+    });
+  });
+}
+
+/* ---------------- navigation ---------------- */
+function switchView(view){
+  document.querySelectorAll('.navbtn[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+  document.getElementById('filterBar').style.display = (view==='people')?'none':'flex';
+}
+
+/* ---------------- master render ---------------- */
+function safe(fn, label){
+  try{ fn(); }catch(err){ console.warn('Erro ao renderizar: '+label, err); }
+}
+function renderAll(skipMatrix){
+  safe(renderKPIs, 'KPIs');
+  safe(renderChartCategoria, 'gráfico categoria');
+  safe(renderChartDonut, 'gráfico donut');
+  safe(renderChartTurno, 'gráfico turno');
+  safe(renderChartGapsMini, 'gráfico gaps mini');
+  safe(renderChartGapsFull, 'gráfico gaps completo');
+  safe(renderOverviewTable, 'tabela visão geral');
+  safe(renderGapsTable, 'tabela gaps');
+  safe(renderPeopleTable, 'tabela colaboradores');
+  if(!skipMatrix) safe(renderMatrixView, 'matriz detalhada');
+  safe(attachSortHandlers, 'ordenação');
+  safe(bindRowButtons, 'botões de linha');
+}
+
+function bindRowButtons(){
+  document.querySelectorAll('[data-eval]').forEach(b=>b.onclick = ()=>openEvalModal(b.dataset.eval));
+  document.querySelectorAll('[data-editp]').forEach(b=>b.onclick = ()=>openPersonModal(b.dataset.editp));
+  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick = ()=>{
+    if(!guardEdit()) return;
+    const e = STATE.employees.find(x=>x.id===b.dataset.toggle);
+    e.ativo = !e.ativo;
+    saveState();
+    populateFilterSelects();
+    renderAll();
+    toast(e.ativo? 'Colaborador reativado' : 'Colaborador inativado');
+  });
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick = ()=>{
+    if(!guardEdit()) return;
+    const e = STATE.employees.find(x=>x.id===b.dataset.del);
+    if(confirm(`Excluir definitivamente "${e.nome}"? Esta ação não pode ser desfeita.`)){
+      STATE.employees = STATE.employees.filter(x=>x.id!==e.id);
+      saveState();
+      populateFilterSelects();
+      renderAll();
+      toast('Colaborador excluído');
+    }
+  });
+}
+
+/* ---------------- init ---------------- */
+function bindStaticListeners(){
+  // nav
+  document.querySelectorAll('.navbtn[data-view]').forEach(b=>b.addEventListener('click', ()=>switchView(b.dataset.view)));
+
+  // filters
+  ['fSearch','fTurno','fPosicao','fStatus','fAtivos'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('input', ()=>renderAll());
+    el.addEventListener('change', ()=>renderAll());
+  });
+
+  // add person
+  ['btnAddPerson','btnAddPerson2','btnAddPerson3'].forEach(id=>document.getElementById(id).addEventListener('click', ()=>openPersonModal(null)));
+  document.getElementById('btnSavePerson').addEventListener('click', savePerson);
+
+  // add skill
+  ['btnAddSkill','btnAddSkill2'].forEach(id=>document.getElementById(id).addEventListener('click', openSkillModal));
+  document.getElementById('btnSaveSkill').addEventListener('click', saveSkill);
+  document.getElementById('skfCat').addEventListener('change', (ev)=>{
+    document.getElementById('skfNovaCatRow').style.display = ev.target.value==='__new__' ? 'block' : 'none';
+  });
+
+  // settings
+  document.getElementById('btnSettings').addEventListener('click', ()=>{
+    document.getElementById('cfgNewPass').value = '';
+    openModal('modalSettings');
+  });
+  document.getElementById('btnSaveSettings').addEventListener('click', ()=>{
+    if(!guardEdit()) return;
+    STATE.settings.threshold = +document.getElementById('cfgThreshold').value;
+    STATE.settings.minAptos = Math.max(1, +document.getElementById('cfgMinAptos').value || 1);
+    const newPass = document.getElementById('cfgNewPass').value;
+    if(newPass){
+      if(newPass.length<4){ toast('A nova senha deve ter ao menos 4 caracteres'); return; }
+      STATE.settings.editPassword = newPass;
+    }
+    saveState();
+    closeModal('modalSettings');
+    renderAll();
+    toast(newPass? 'Critérios e senha atualizados' : 'Critérios atualizados');
+  });
+
+  // export
+  document.getElementById('btnExportExcel').addEventListener('click', exportExcel);
+  document.getElementById('btnExportExcel2').addEventListener('click', exportExcel);
+
+  // reset
+  document.getElementById('btnResetData').addEventListener('click', ()=>{
+    if(!guardEdit()) return;
+    if(confirm('Restaurar os dados originais da planilha? Todas as alterações feitas na matriz serão perdidas.')){
+      STATE = seedToState();
+      saveState();
+      populateFilterSelects();
+      renderAll();
+      toast('Dados originais restaurados');
+    }
+  });
+
+  // edit mode toggle
+  document.getElementById('btnToggleEdit').addEventListener('click', ()=>{
+    if(editMode){
+      editMode = false;
+      applyEditModeUI();
+      toast('Modo de edição bloqueado');
+    } else {
+      openAuthModal();
+    }
+  });
+  document.getElementById('btnAuthConfirm').addEventListener('click', confirmAuth);
+  ['authPass','authNewPass'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') confirmAuth(); });
+  });
+
+  // modal close
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>closeModal(b.dataset.close)));
+  document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', (ev)=>{ if(ev.target===o) o.classList.remove('show'); }));
+}
+
+function init(){
+  STATE = loadState();
+  document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
+  document.getElementById('cfgThreshold').value = STATE.settings.threshold;
+  document.getElementById('cfgMinAptos').value = STATE.settings.minAptos;
+
+  populateFilterSelects();
+
+  // IMPORTANTE: conecta todos os botões e listeners ANTES de renderizar
+  // gráficos/tabelas, para que a interface nunca fique "morta" caso algo
+  // (ex: biblioteca de gráficos) falhe ao carregar.
+  safe(bindStaticListeners, 'listeners');
+  safe(applyEditModeUI, 'modo de edição');
+  renderAll();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
