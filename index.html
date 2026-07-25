@@ -616,16 +616,37 @@ if(typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined'){ Char
 let charts = {};
 
 /* ---------------- persistence ---------------- */
-function loadState(){
-  const raw = localStorage.getItem(STORE_KEY);
-  if(raw){
-    try{
-      const st = JSON.parse(raw);
-      if(!st.skills || !st.skills.length) st.skills = SEED.skills.map(s=>({...s}));
-      return st;
-    }catch(e){ /* fallthrough */ }
+async function loadState(){
+  try {
+    const resposta = await fetch(
+      'https://script.google.com/macros/s/AKfycby3PeHPWk9sDvlqrEwN1N3I5V5_beC_biEio3zDXUgrkia7htQNLIveMb2CqADNE-1X/exec'
+    );
+
+    if (!resposta.ok) {
+      throw new Error('Erro ao acessar o Google Apps Script');
+    }
+
+    const dados = await resposta.json();
+
+    return {
+      employees: dados.colaboradores || [],
+      skills: dados.competencias || [],
+      settings: {
+        threshold: 3,
+        minAptos: 2,
+        editPassword: null
+      },
+      meta: {
+        lastUpdate: new Date().toISOString()
+      }
+    };
+
+  } catch (erro) {
+    console.error('Erro ao carregar dados da planilha:', erro);
+
+    // Se a planilha não responder, usa os dados locais de emergência
+    return seedToState();
   }
-  return seedToState();
 }
 function seedToState(){
   return {
@@ -1391,8 +1412,8 @@ function bindStaticListeners(){
   document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', (ev)=>{ if(ev.target===o) o.classList.remove('show'); }));
 }
 
-function init(){
-  STATE = loadState();
+async function init(){
+  STATE = await loadState();  
   document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
   document.getElementById('cfgThreshold').value = STATE.settings.threshold;
   document.getElementById('cfgMinAptos').value = STATE.settings.minAptos;
