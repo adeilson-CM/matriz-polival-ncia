@@ -710,14 +710,18 @@ function setSyncBadge(status, text){
 function cloudEnabled(){ return !!CLOUD.url; }
 
 async function cloudPull(isInitial){
-  if(!cloudEnabled() || CLOUD.pulling) return;
+  // Retorna true se a planilha JÁ TINHA dados salvos (usado para decidir se
+  // é seguro empurrar o estado local ao conectar pela primeira vez).
+  if(!cloudEnabled() || CLOUD.pulling) return false;
   CLOUD.pulling = true;
   if(!isInitial) setSyncBadge('syncing', 'Sincronizando…');
+  let hadRemoteData = false;
   try{
     const res = await fetch(CLOUD.url + '?t=' + Date.now());
     if(!res.ok) throw new Error('HTTP '+res.status);
     const out = await res.json();
     if(out && out.data){
+      hadRemoteData = true;
       const remote = JSON.parse(out.data);
       const remoteTime = out.updatedAt ? new Date(out.updatedAt).getTime() : 0;
       const localTime = STATE.meta.lastUpdate ? new Date(STATE.meta.lastUpdate).getTime() : 0;
@@ -736,6 +740,7 @@ async function cloudPull(isInitial){
   }finally{
     CLOUD.pulling = false;
   }
+  return hadRemoteData;
 }
 
 async function cloudPushNow(){
@@ -764,11 +769,12 @@ function cloudPushDebounced(){
   CLOUD.pushTimer = setTimeout(cloudPushNow, 900);
 }
 
-function startCloudPolling(){
+async function startCloudPolling(){
   clearInterval(CLOUD.pollTimer);
-  if(!cloudEnabled()) return;
-  cloudPull(true);
+  if(!cloudEnabled()) return false;
+  const hadRemoteData = await cloudPull(true);
   CLOUD.pollTimer = setInterval(()=>cloudPull(false), 8000);
+  return hadRemoteData;
 }
 
 function stopCloudPolling(){
@@ -1480,7 +1486,7 @@ function bindStaticListeners(){
       msg.textContent = '❌ Não consegui conectar: ' + err.message + '. Confira se o deploy está como "Qualquer pessoa" tem acesso.';
     }
   });
-  document.getElementById('btnCloudSave').addEventListener('click', ()=>{
+  document.getElementById('btnCloudSave').addEventListener('click', async ()=>{
     const url = document.getElementById('cloudUrl').value.trim();
     const user = document.getElementById('cloudUserName').value.trim();
     if(!url){ toast('Informe a URL do Apps Script'); return; }
@@ -1488,8 +1494,14 @@ function bindStaticListeners(){
     saveCloudCfg();
     closeModal('modalCloud');
     toast('☁️ Sincronização configurada');
-    startCloudPolling();
-    cloudPushNow(); // envia o estado atual como ponto de partida
+    // Primeiro busca o que já existe na planilha. Só envia os dados locais
+    // como ponto de partida se a planilha ainda estiver vazia — assim um
+    // aparelho novo (ex: celular) nunca sobrescreve dados mais recentes
+    // que já estavam sincronizados por outro aparelho (ex: PC).
+    const hadRemoteData = await startCloudPolling();
+    if(!hadRemoteData){
+      cloudPushNow();
+    }
   });
   document.getElementById('btnCloudDisconnect').addEventListener('click', ()=>{
     CLOUD.url = null; CLOUD.user = '';
@@ -1581,6 +1593,18 @@ function init(){
   document.getElementById('cfgMinAptos').value = STATE.settings.minAptos;
 
   populateFilterSelects();
+
+  // Recarrega a configuração de nuvem salva (URL do Apps Script + nome)
+  // e retoma a sincronização automaticamente. Sem isso, toda vez que a
+  // página é recarregada (F5, ou o navegador do celular atualizando em
+  // segundo plano) o app "esquecia" a conexão e voltava para Offline,
+  // mesmo já tendo sido configurado antes.
+  loadCloudCfg();
+  if(cloudEnabled()){
+    startCloudPolling();
+  } else {
+    setSyncBadge('offline', 'Offline');
+  }
 
   // IMPORTANTE: conecta todos os botões e listeners ANTES de renderizar
   // gráficos/tabelas, para que a interface nunca fique "morta" caso algo
