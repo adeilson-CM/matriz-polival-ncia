@@ -779,7 +779,14 @@ function renderKPIs(){
 
   // gaps criticos count
   const skillStats = computeSkillStats(active);
-  const risky = skillStats.filter(s=>s.aptos < STATE.settings.minAptos).length;
+  const singlePerson = total===1;
+  const riskyLbl = singlePerson ? 'Competências pendentes' : 'Competências em risco';
+  const risky = singlePerson
+    ? skillStats.filter(s=>s.aptos < 1).length
+    : skillStats.filter(s=>s.aptos < STATE.settings.minAptos).length;
+  const riskyFoot = singlePerson
+    ? `faltam p/ ${esc(active[0].nome.split(' ')[0])} atingir apto`
+    : `< ${STATE.settings.minAptos} aptos`;
 
   const cards = [
     {lbl:'Colaboradores (filtro)', val: total, foot: `${STATE.employees.length} no total`, color:'var(--blue-400)'},
@@ -787,7 +794,7 @@ function renderKPIs(){
     {lbl:'Aptos p/ decisão', val: aptoCount, foot: total? Math.round(aptoCount/total*100)+'% do time' : '—', color:'var(--lvl4)'},
     {lbl:'Baixa aptidão', val: baixoCount, foot: 'requer plano de ação', color:'var(--lvl1)'},
     {lbl:'Sem avaliação', val: naCount, foot: 'nenhuma competência lançada', color:'var(--ink-400)'},
-    {lbl:'Competências em risco', val: risky, foot: `< ${STATE.settings.minAptos} aptos`, color:'var(--accent)'},
+    {lbl:riskyLbl, val: risky, foot: riskyFoot, color:'var(--accent)'},
   ];
   document.getElementById('kpiRow').innerHTML = cards.map(c=>`
     <div class="kpi"><div class="bar" style="background:${c.color}"></div>
@@ -800,6 +807,7 @@ function renderKPIs(){
 /* ---------------- skill stats (for gaps) ---------------- */
 function computeSkillStats(emps){
   const list = emps || filteredEmployees().filter(e=>e.ativo);
+  const singlePerson = list.length===1; // filtro reduzido a 1 colaborador: risco vira "pendência individual"
   return STATE.skills.map(s=>{
     let aptos=0, avaliados=0;
     list.forEach(e=>{
@@ -807,9 +815,14 @@ function computeSkillStats(emps){
       if(v>0){ avaliados++; if(v>=STATE.settings.threshold) aptos++; }
     });
     const cobertura = avaliados? Math.round(aptos/avaliados*100) : 0;
-    let risco = 'baixo';
-    if(aptos < STATE.settings.minAptos) risco='alto';
-    else if(aptos < STATE.settings.minAptos*2) risco='medio';
+    let risco;
+    if(singlePerson){
+      risco = aptos>=1 ? 'baixo' : 'alto'; // alto = falta essa competência para o colaborador filtrado
+    } else {
+      risco = 'baixo';
+      if(aptos < STATE.settings.minAptos) risco='alto';
+      else if(aptos < STATE.settings.minAptos*2) risco='medio';
+    }
     return {id:s.id, name:s.name, cat:s.cat, aptos, avaliados, cobertura, risco};
   });
 }
