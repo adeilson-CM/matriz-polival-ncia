@@ -619,8 +619,8 @@ let charts = {};
 async function loadState(){
   try {
     const resposta = await fetch(
-      'https://script.google.com/macros/s/AKfycby3PeHPWk9sDvlqrEwN1N3I5V5_beC_biEio3zDXUgrkia7htQNLIveMb2CqADNE-1X/exec'
-    );
+      https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnRR9iSe7U4547qTc_CK9pru46XNfFqs4xYgMYuHVrFX1iL8sgXDk7pE-_daCtA5iSc-4VBzZ-PxJsDXtZ7v9HfnxnT3E0dKN9VLMWPtTPd3ayovHCYHgzc4phXajjHUo1rCgmUu8SJ8lr-LQfnL3912CyTe_L-fOm341gGrMX0qXOATyfy3Mtsr7iDX8TQtoidjG4B8cv-3-xUB85scw3eZ5wGXMFpxvfbz3a42X6EL_roFaTP_xfENEi0cHbyOiKMU03y7V8vcZj_zMpzOowUnuU6BQQ&lib=MP2_UaPsusBziUdHIeaj1mg5THVlN2byw
+    );  
 
     if (!resposta.ok) {
       throw new Error('Erro ao acessar o Google Apps Script');
