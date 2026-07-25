@@ -95,6 +95,15 @@ button{font-family:inherit;}
 .btn.small{padding:5px 9px;font-size:11.8px;border-radius:7px;}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
 
+/* ---------- CLOUD SYNC STATUS ---------- */
+.sync-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;font-size:12px;font-weight:700;border:1px solid var(--line);background:var(--card);cursor:pointer;user-select:none;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#c7cdd8;flex:none;}
+.sync-badge.online .sync-dot{background:#2f9e57;box-shadow:0 0 0 3px rgba(47,158,87,.18);}
+.sync-badge.offline .sync-dot{background:#e0523c;box-shadow:0 0 0 3px rgba(224,82,60,.16);}
+.sync-badge.syncing .sync-dot{background:#e2a63c;animation:syncpulse 1s infinite;}
+@keyframes syncpulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.sync-badge .sync-txt{white-space:nowrap;}
+
 /* ---------- TABS ---------- */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
 .tab{padding:9px 4px;margin-right:18px;background:transparent;border:none;font-size:13.4px;font-weight:600;color:var(--ink-400);cursor:pointer;border-bottom:2px solid transparent;}
@@ -103,7 +112,7 @@ button{font-family:inherit;}
 .view.active{display:block;}
 
 /* ---------- KPI CARDS ---------- */
-.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px;}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px;}
 @media(max-width:1400px){.kpi-row{grid-template-columns:repeat(3,1fr);}}
 .kpi{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;position:relative;overflow:hidden;}
 .kpi .bar{position:absolute;left:0;top:0;bottom:0;width:4px;}
@@ -306,6 +315,7 @@ body.edit-locked .edit-only{opacity:.45;}
         <div class="sub">Controle de aptidão e apoio à tomada de decisão para alocação de pessoas · Gestamp Taubaté</div>
       </div>
       <div class="actions">
+        <button class="sync-badge offline" id="syncBadge" title="Clique para configurar a sincronização"><span class="sync-dot"></span><span class="sync-txt">Offline</span></button>
         <button class="btn" id="btnToggleEdit">🔒 Ativar edição</button>
         <button class="btn" id="btnExportExcel2">⬇ Excel</button>
         <button class="btn primary edit-only" id="btnAddPerson2">+ Incluir colaborador</button>
@@ -455,6 +465,35 @@ body.edit-locked .edit-only{opacity:.45;}
     </section>
 
   </main>
+</div>
+
+<!-- ============ MODAL: Sincronização em nuvem ============ -->
+<div class="overlay" id="modalCloud">
+  <div class="modal">
+    <div class="modal-head"><h3>☁️ Sincronização em nuvem</h3><button class="x-btn" data-close="modalCloud">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>URL do Google Apps Script (Web App)</label>
+        <input id="cloudUrl" type="text" placeholder="https://script.google.com/macros/s/AAAA.../exec">
+      </div>
+      <div class="form-row">
+        <label>Seu nome (aparece como "quem editou por último")</label>
+        <input id="cloudUserName" type="text" placeholder="Ex: João - Logística">
+      </div>
+      <div id="cloudStatusMsg" style="font-size:12.5px;color:var(--ink-600);line-height:1.5;margin-top:4px;"></div>
+      <div style="font-size:11.8px;color:var(--ink-400);margin-top:10px;line-height:1.5;">
+        Com isso configurado, toda alteração feita por qualquer pessoa (em qualquer computador) é salva na planilha do Google
+        e todo mundo que tiver o app aberto recebe a atualização automaticamente em poucos segundos.
+      </div>
+    </div>
+    <div class="modal-foot" style="display:flex;gap:8px;justify-content:space-between;">
+      <button class="btn danger" id="btnCloudDisconnect">Desconectar</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" id="btnCloudTest">Testar conexão</button>
+        <button class="btn primary" id="btnCloudSave">Salvar e conectar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ============ MODAL: Incluir/Editar colaborador ============ -->
@@ -639,11 +678,104 @@ function saveState(){
   STATE.meta.lastUpdate = new Date().toISOString();
   localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
   document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
+  cloudPushDebounced();
 }
 function fmtDate(iso){
   const d = new Date(iso);
   return d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 }
+
+/* ---------------- cloud sync (Google Sheets via Apps Script) ---------------- */
+const CLOUD_CFG_KEY = 'gestamp_matriz_cloud_cfg_v1';
+let CLOUD = { url:null, user:'', lastPulledAt:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false };
+
+function loadCloudCfg(){
+  try{
+    const raw = localStorage.getItem(CLOUD_CFG_KEY);
+    if(raw){ const c = JSON.parse(raw); CLOUD.url = c.url||null; CLOUD.user = c.user||''; }
+  }catch(e){/* ignore */}
+}
+function saveCloudCfg(){
+  localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify({url:CLOUD.url, user:CLOUD.user}));
+}
+
+function setSyncBadge(status, text){
+  const b = document.getElementById('syncBadge');
+  if(!b) return;
+  b.classList.remove('online','offline','syncing');
+  b.classList.add(status);
+  b.querySelector('.sync-txt').textContent = text;
+}
+
+function cloudEnabled(){ return !!CLOUD.url; }
+
+async function cloudPull(isInitial){
+  if(!cloudEnabled() || CLOUD.pulling) return;
+  CLOUD.pulling = true;
+  if(!isInitial) setSyncBadge('syncing', 'Sincronizando…');
+  try{
+    const res = await fetch(CLOUD.url + '?t=' + Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const out = await res.json();
+    if(out && out.data){
+      const remote = JSON.parse(out.data);
+      const remoteTime = out.updatedAt ? new Date(out.updatedAt).getTime() : 0;
+      const localTime = STATE.meta.lastUpdate ? new Date(STATE.meta.lastUpdate).getTime() : 0;
+      if(remoteTime > localTime && remote && remote.employees){
+        STATE = remote;
+        localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+        safe(renderAll, 'sincronização (dados remotos)');
+        document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
+        toast('☁️ Dados atualizados por outro colaborador');
+      }
+    }
+    setSyncBadge('online', 'Online');
+  }catch(err){
+    console.warn('Erro ao sincronizar (pull):', err);
+    setSyncBadge('offline', 'Offline');
+  }finally{
+    CLOUD.pulling = false;
+  }
+}
+
+async function cloudPushNow(){
+  if(!cloudEnabled()) return;
+  CLOUD.pushing = true;
+  setSyncBadge('syncing', 'Salvando…');
+  try{
+    const res = await fetch(CLOUD.url, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'}, // evita preflight CORS no Apps Script
+      body: JSON.stringify({data: STATE, updatedBy: CLOUD.user||''})
+    });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    setSyncBadge('online', 'Online');
+  }catch(err){
+    console.warn('Erro ao sincronizar (push):', err);
+    setSyncBadge('offline', 'Offline');
+  }finally{
+    CLOUD.pushing = false;
+  }
+}
+
+function cloudPushDebounced(){
+  if(!cloudEnabled()) return;
+  clearTimeout(CLOUD.pushTimer);
+  CLOUD.pushTimer = setTimeout(cloudPushNow, 900);
+}
+
+function startCloudPolling(){
+  clearInterval(CLOUD.pollTimer);
+  if(!cloudEnabled()) return;
+  cloudPull(true);
+  CLOUD.pollTimer = setInterval(()=>cloudPull(false), 8000);
+}
+
+function stopCloudPolling(){
+  clearInterval(CLOUD.pollTimer);
+  CLOUD.pollTimer = null;
+}
+
 
 /* ---------------- toast ---------------- */
 let toastTimer=null;
@@ -772,7 +904,6 @@ function renderKPIs(){
   const withEval = active.filter(e=>empAvaliadas(e).length>0);
   const aptoCount = active.filter(e=>empStatus(e)==='apto').length;
   const baixoCount = active.filter(e=>empStatus(e)==='baixo').length;
-  const naCount = active.filter(e=>empStatus(e)==='na').length;
 
   let sumIdx=0, nIdx=0;
   withEval.forEach(e=>{ const i=empAptidaoIndex(e); if(i!==null){sumIdx+=i; nIdx++;} });
@@ -801,7 +932,6 @@ function renderKPIs(){
     {lbl:'Índice de aptidão médio', val: avgIdx+'%', foot: `limiar: nível ≥ ${STATE.settings.threshold}`, color:'var(--lvl3)'},
     {lbl:aptoLbl, val: aptoVal, foot: aptoFoot, color:'var(--lvl4)'},
     {lbl:'Baixa aptidão', val: baixoCount, foot: 'requer plano de ação', color:'var(--lvl1)'},
-    {lbl:'Sem avaliação', val: naCount, foot: 'nenhuma competência lançada', color:'var(--ink-400)'},
     {lbl:riskyLbl, val: risky, foot: riskyFoot, color:'var(--accent)'},
   ];
   document.getElementById('kpiRow').innerHTML = cards.map(c=>`
@@ -1328,6 +1458,47 @@ function bindRowButtons(){
 function bindStaticListeners(){
   // nav
   document.querySelectorAll('.navbtn[data-view]').forEach(b=>b.addEventListener('click', ()=>switchView(b.dataset.view)));
+
+  // cloud sync
+  document.getElementById('syncBadge').addEventListener('click', ()=>{
+    document.getElementById('cloudUrl').value = CLOUD.url||'';
+    document.getElementById('cloudUserName').value = CLOUD.user||'';
+    document.getElementById('cloudStatusMsg').textContent = cloudEnabled() ? 'Conectado. Alterações são salvas na nuvem automaticamente.' : 'Ainda não conectado — configure a URL do Apps Script abaixo.';
+    openModal('modalCloud');
+  });
+  document.getElementById('btnCloudTest').addEventListener('click', async ()=>{
+    const url = document.getElementById('cloudUrl').value.trim();
+    const msg = document.getElementById('cloudStatusMsg');
+    if(!url){ msg.textContent = 'Cole a URL do Apps Script primeiro.'; return; }
+    msg.textContent = 'Testando…';
+    try{
+      const res = await fetch(url + '?t=' + Date.now());
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const out = await res.json();
+      msg.textContent = out && ('data' in out) ? '✅ Conexão OK — a planilha respondeu corretamente.' : '⚠️ Respondeu, mas em formato inesperado. Confira o script.';
+    }catch(err){
+      msg.textContent = '❌ Não consegui conectar: ' + err.message + '. Confira se o deploy está como "Qualquer pessoa" tem acesso.';
+    }
+  });
+  document.getElementById('btnCloudSave').addEventListener('click', ()=>{
+    const url = document.getElementById('cloudUrl').value.trim();
+    const user = document.getElementById('cloudUserName').value.trim();
+    if(!url){ toast('Informe a URL do Apps Script'); return; }
+    CLOUD.url = url; CLOUD.user = user;
+    saveCloudCfg();
+    closeModal('modalCloud');
+    toast('☁️ Sincronização configurada');
+    startCloudPolling();
+    cloudPushNow(); // envia o estado atual como ponto de partida
+  });
+  document.getElementById('btnCloudDisconnect').addEventListener('click', ()=>{
+    CLOUD.url = null; CLOUD.user = '';
+    saveCloudCfg();
+    stopCloudPolling();
+    setSyncBadge('offline', 'Offline');
+    closeModal('modalCloud');
+    toast('Sincronização desconectada — trabalhando só neste navegador');
+  });
 
   // filters
   ['fSearch','fTurno','fPosicao','fStatus','fAtivos'].forEach(id=>{
