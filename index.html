@@ -687,13 +687,31 @@ function fmtDate(iso){
 
 /* ---------------- cloud sync (Google Sheets via Apps Script) ---------------- */
 const CLOUD_CFG_KEY = 'gestamp_matriz_cloud_cfg_v1';
+
+// URL padrão do Apps Script (Web App) já configurada — qualquer pessoa que
+// abrir o link pela primeira vez conecta automaticamente, sem precisar
+// colar a URL manualmente. Se um dia for preciso trocar de planilha/Apps
+// Script, basta atualizar essa constante e publicar de novo no GitHub.
+const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyo3QgYxv7sCtxTXIJRW0AIDwhW68RDOHZNRnBh6LdGb8k76W5EVQEmMAQ3JYA05Xn4-A/exec';
+
 let CLOUD = { url:null, user:'', lastPulledAt:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false };
 
 function loadCloudCfg(){
   try{
     const raw = localStorage.getItem(CLOUD_CFG_KEY);
-    if(raw){ const c = JSON.parse(raw); CLOUD.url = c.url||null; CLOUD.user = c.user||''; }
-  }catch(e){/* ignore */}
+    if(raw){
+      const c = JSON.parse(raw);
+      CLOUD.url = c.url || DEFAULT_CLOUD_URL;
+      CLOUD.user = c.user || '';
+    } else {
+      // Primeira vez nesse navegador/aparelho: usa a URL padrão automaticamente.
+      CLOUD.url = DEFAULT_CLOUD_URL;
+      CLOUD.user = '';
+      saveCloudCfg();
+    }
+  }catch(e){
+    CLOUD.url = DEFAULT_CLOUD_URL;
+  }
 }
 function saveCloudCfg(){
   localStorage.setItem(CLOUD_CFG_KEY, JSON.stringify({url:CLOUD.url, user:CLOUD.user}));
