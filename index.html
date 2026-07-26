@@ -743,12 +743,19 @@ async function cloudPull(isInitial){
       const remote = JSON.parse(out.data);
       const remoteTime = out.updatedAt ? new Date(out.updatedAt).getTime() : 0;
       const localTime = STATE.meta.lastUpdate ? new Date(STATE.meta.lastUpdate).getTime() : 0;
-      if(remoteTime > localTime && remote && remote.employees){
+      const remoteIsDifferent = JSON.stringify(remote) !== JSON.stringify(STATE);
+      if(remoteTime > localTime && remote && remote.employees && remoteIsDifferent){
         STATE = remote;
         localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
         safe(renderAll, 'sincronização (dados remotos)');
         document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
         toast('☁️ Dados atualizados por outro colaborador');
+      } else if(remoteTime > localTime){
+        // O servidor tem um carimbo mais novo, mas o conteúdo é idêntico
+        // (provavelmente o eco do que este mesmo aparelho acabou de enviar).
+        // Só alinha o relógio local, sem recarregar a tela nem avisar.
+        STATE.meta.lastUpdate = out.updatedAt;
+        localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
       }
     }
     setSyncBadge('online', 'Online');
@@ -772,6 +779,18 @@ async function cloudPushNow(){
       body: JSON.stringify({data: STATE, updatedBy: CLOUD.user||''})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
+    // Alinha o "relógio" local com o horário que o servidor confirmou ter
+    // salvo. Sem isso, a próxima sincronização automática acha que o
+    // servidor tem uma versão "mais nova" (porque o carimbo dele é sempre
+    // alguns instantes depois do carimbo local da edição) e mostra um
+    // aviso falso de "dados atualizados por outro colaborador".
+    try{
+      const out = await res.json();
+      if(out && out.updatedAt){
+        STATE.meta.lastUpdate = out.updatedAt;
+        localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+      }
+    }catch(parseErr){ /* resposta sem JSON válido, ignora */ }
     setSyncBadge('online', 'Online');
   }catch(err){
     console.warn('Erro ao sincronizar (push):', err);
