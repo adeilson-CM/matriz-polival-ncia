@@ -720,7 +720,7 @@ const CLOUD_CFG_KEY = 'gestamp_matriz_cloud_cfg_v1';
 // Script, basta atualizar essa constante e publicar de novo no GitHub.
 const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyo3QgYxv7sCtxTXIJRW0AIDwhW68RDOHZNRnBh6LdGb8k76W5EVQEmMAQ3JYA05Xn4-A/exec';
 
-let CLOUD = { url:null, user:'', lastPulledAt:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false };
+let CLOUD = { url:null, user:'', lastPulledAt:null, lastPullOk:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false };
 
 function loadCloudCfg(){
   try{
@@ -785,9 +785,11 @@ async function cloudPull(isInitial){
       }
     }
     setSyncBadge('online', 'Online');
+    CLOUD.lastPullOk = true;
   }catch(err){
     console.warn('Erro ao sincronizar (pull):', err);
     setSyncBadge('offline', 'Offline');
+    CLOUD.lastPullOk = false;
   }finally{
     CLOUD.pulling = false;
   }
@@ -869,7 +871,21 @@ function guardEdit(){
   if(!editMode){ toast('Ative o modo de edição (🔒) para alterar dados'); return false; }
   return true;
 }
-function openAuthModal(){
+async function openAuthModal(){
+  const btn = document.getElementById('btnToggleEdit');
+  const originalLabel = btn ? btn.innerHTML : null;
+
+  if(cloudEnabled()){
+    if(btn){ btn.disabled = true; btn.innerHTML = '⏳ Verificando…'; }
+    await cloudPull(true);
+    if(btn){ btn.disabled = false; btn.innerHTML = originalLabel; }
+
+    if(CLOUD.lastPullOk === false){
+      toast('⚠️ Não foi possível confirmar com a nuvem agora. Verifique sua internet e tente novamente antes de ativar a edição.');
+      return;
+    }
+  }
+
   const hasPass = !!(STATE.settings.editPassword);
   document.getElementById('authModalTitle').textContent = hasPass ? 'Ativar modo de edição' : 'Definir senha de edição';
   document.getElementById('authNewRow').style.display = hasPass ? 'none' : 'block';
