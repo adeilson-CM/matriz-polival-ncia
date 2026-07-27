@@ -520,6 +520,10 @@ body.edit-locked .edit-only{opacity:.45;}
           </select>
         </div>
       </div>
+      <div class="form-row" id="pfNovaPosicaoRow" style="display:none;">
+        <label>Nome da nova posição</label>
+        <input id="pfNovaPosicao" type="text" placeholder="Ex: Supervisor de Logística">
+      </div>
       <div class="hint">As competências podem ser avaliadas depois, na Matriz Detalhada ou clicando em "Avaliar" na lista de colaboradores.</div>
     </div>
     <div class="modal-foot">
@@ -1314,29 +1318,52 @@ function openEvalModal(empId){
 }
 
 /* ---------------- person add/edit modal ---------------- */
+const POSICOES_PADRAO = ['Auxiliar de Logística','Operador de Logística I','Operador de Logística II','Assistente de Logística','Líder de Logística'];
+function getPosicoesDisponiveis(){
+  const usadas = [...new Set(STATE.employees.map(e=>e.posicao).filter(Boolean))];
+  const todas = [...new Set([...POSICOES_PADRAO, ...usadas])];
+  return todas.sort((a,b)=>a.localeCompare(b, 'pt-BR'));
+}
+function populatePosicaoSelect(currentValue){
+  const sel = document.getElementById('pfPosicao');
+  const posicoes = getPosicoesDisponiveis();
+  sel.innerHTML = posicoes.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('') + `<option value="__new__">+ Nova posição…</option>`;
+  if(currentValue && posicoes.includes(currentValue)){
+    sel.value = currentValue;
+  } else {
+    sel.selectedIndex = 0;
+  }
+}
 let editingPersonId = null;
 function openPersonModal(empId){
   if(!guardEdit()) return;
   editingPersonId = empId || null;
   const title = document.getElementById('personModalTitle');
+  document.getElementById('pfNovaPosicaoRow').style.display = 'none';
+  document.getElementById('pfNovaPosicao').value = '';
   if(empId){
     const e = STATE.employees.find(x=>x.id===empId);
     title.textContent = 'Editar colaborador';
     document.getElementById('pfNome').value = e.nome;
     document.getElementById('pfTurno').value = e.turno;
-    document.getElementById('pfPosicao').value = e.posicao;
+    populatePosicaoSelect(e.posicao);
   } else {
     title.textContent = 'Incluir colaborador';
     document.getElementById('pfNome').value = '';
     document.getElementById('pfTurno').selectedIndex = 0;
-    document.getElementById('pfPosicao').selectedIndex = 0;
+    populatePosicaoSelect(null);
   }
   openModal('modalPerson');
 }
 function savePerson(){
   const nome = document.getElementById('pfNome').value.trim();
   const turno = document.getElementById('pfTurno').value;
-  const posicao = document.getElementById('pfPosicao').value;
+  const posSel = document.getElementById('pfPosicao');
+  let posicao = posSel.value;
+  if(posicao==='__new__'){
+    posicao = document.getElementById('pfNovaPosicao').value.trim();
+    if(!posicao){ toast('Informe o nome da nova posição'); return; }
+  }
   if(!nome){ toast('Informe o nome do colaborador'); return; }
   if(editingPersonId){
     const e = STATE.employees.find(x=>x.id===editingPersonId);
@@ -1559,6 +1586,9 @@ function bindStaticListeners(){
   // add person
   ['btnAddPerson','btnAddPerson2','btnAddPerson3'].forEach(id=>document.getElementById(id).addEventListener('click', ()=>openPersonModal(null)));
   document.getElementById('btnSavePerson').addEventListener('click', savePerson);
+  document.getElementById('pfPosicao').addEventListener('change', (ev)=>{
+    document.getElementById('pfNovaPosicaoRow').style.display = ev.target.value==='__new__' ? 'block' : 'none';
+  });
 
   // add skill
   ['btnAddSkill','btnAddSkill2'].forEach(id=>document.getElementById(id).addEventListener('click', openSkillModal));
