@@ -329,6 +329,7 @@ body.edit-locked .edit-only{opacity:.45;}
       </div>
       <select class="f-input" id="fTurno" style="max-width:150px;"></select>
       <select class="f-input" id="fPosicao" style="max-width:190px;"></select>
+      <select class="f-input" id="fGrupo" style="max-width:190px;"></select>
       <select class="f-input" id="fStatus" style="max-width:190px;">
         <option value="todos">Status: todos</option>
         <option value="apto">Aptos p/ decisão</option>
@@ -454,6 +455,7 @@ body.edit-locked .edit-only{opacity:.45;}
             <thead><tr>
               <th class="sortable" data-k="nome">Nome</th>
               <th class="sortable" data-k="posicao">Posição</th>
+              <th class="sortable" data-k="grupo">Grupo</th>
               <th class="sortable" data-k="turno">Turno</th>
               <th class="sortable" data-k="status">Status</th>
               <th>Ações</th>
@@ -523,6 +525,13 @@ body.edit-locked .edit-only{opacity:.45;}
       <div class="form-row" id="pfNovaPosicaoRow" style="display:none;">
         <label>Nome da nova posição</label>
         <input id="pfNovaPosicao" type="text" placeholder="Ex: Supervisor de Logística">
+      </div>
+      <div class="form-row"><label>Grupo</label>
+        <select id="pfGrupo"></select>
+      </div>
+      <div class="form-row" id="pfNovoGrupoRow" style="display:none;">
+        <label>Nome do novo grupo</label>
+        <input id="pfNovoGrupo" type="text" placeholder="Ex: Reboque">
       </div>
       <div class="hint">As competências podem ser avaliadas depois, na Matriz Detalhada ou clicando em "Avaliar" na lista de colaboradores.</div>
     </div>
@@ -954,6 +963,7 @@ function currentFilters(){
     search: document.getElementById('fSearch').value.trim().toLowerCase(),
     turno: document.getElementById('fTurno').value,
     posicao: document.getElementById('fPosicao').value,
+    grupo: document.getElementById('fGrupo').value,
     status: document.getElementById('fStatus').value,
     ativos: document.getElementById('fAtivos').checked
   };
@@ -965,12 +975,19 @@ function filteredEmployees(){
     if(f.search && !e.nome.toLowerCase().includes(f.search)) return false;
     if(f.turno!=='all' && e.turno!==f.turno) return false;
     if(f.posicao!=='all' && e.posicao!==f.posicao) return false;
+    if(f.grupo!=='all' && (e.grupo||'Sem grupo')!==f.grupo) return false;
     if(f.status!=='todos' && empStatus(e)!==f.status) return false;
     return true;
   });
 }
 
 /* ---------------- filter selects ---------------- */
+const GRUPOS_PADRAO = ['PCP','Inventário','Operação','Empilhadeira','Reboque'];
+function getGruposDisponiveis(){
+  const usados = [...new Set(STATE.employees.map(e=>e.grupo).filter(Boolean))];
+  const todos = [...new Set([...GRUPOS_PADRAO, ...usados])];
+  return todos.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
 function populateFilterSelects(){
   const turnos = [...new Set(STATE.employees.map(e=>e.turno))].sort();
   const posicoes = [...new Set(STATE.employees.map(e=>e.posicao))].sort();
@@ -978,6 +995,10 @@ function populateFilterSelects(){
   fT.innerHTML = '<option value="all">Turno: todos</option>' + turnos.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
   const fP = document.getElementById('fPosicao');
   fP.innerHTML = '<option value="all">Posição: todas</option>' + posicoes.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  const grupos = getGruposDisponiveis();
+  const usaSemGrupo = STATE.employees.some(e=>!e.grupo);
+  const fG = document.getElementById('fGrupo');
+  fG.innerHTML = '<option value="all">Grupo: todos</option>' + grupos.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('') + (usaSemGrupo?'<option value="Sem grupo">Sem grupo</option>':'');
 }
 function esc(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -1307,11 +1328,18 @@ function renderPeopleTable(){
     return String(av).localeCompare(String(bv))*dir;
   });
   const tbody = document.querySelector('#tblPeople tbody');
+  const grupos = getGruposDisponiveis();
   tbody.innerHTML = rows.map(e=>{
     const st = empStatus(e);
+    const grupoAtual = e.grupo || '';
+    const opcoesGrupo = ['<option value="">— sem grupo —</option>']
+      .concat(grupos.map(g=>`<option value="${esc(g)}" ${g===grupoAtual?'selected':''}>${esc(g)}</option>`))
+      .concat(['<option value="__new__">+ Novo grupo…</option>'])
+      .join('');
     return `<tr>
       <td class="name-cell">${esc(e.nome)}</td>
       <td>${esc(e.posicao)}</td>
+      <td><select class="f-input grupo-select edit-only" data-grupo-emp="${e.id}" style="max-width:160px;">${opcoesGrupo}</select></td>
       <td>${esc(e.turno)}</td>
       <td>${e.ativo?`<span class="tag ${STATUS_CLASS[st]}">${STATUS_LABEL[st]}</span>`:'<span class="tag na">Inativo</span>'}</td>
       <td>
@@ -1322,6 +1350,24 @@ function renderPeopleTable(){
       </td>
     </tr>`;
   }).join('');
+
+  tbody.querySelectorAll('[data-grupo-emp]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      if(!guardEdit()){ sel.value = STATE.employees.find(x=>x.id===sel.dataset.grupoEmp).grupo || ''; return; }
+      const emp = STATE.employees.find(x=>x.id===sel.dataset.grupoEmp);
+      if(!emp) return;
+      let novoGrupo = sel.value;
+      if(novoGrupo==='__new__'){
+        novoGrupo = (prompt('Nome do novo grupo:')||'').trim();
+        if(!novoGrupo){ sel.value = emp.grupo||''; return; }
+      }
+      emp.grupo = novoGrupo;
+      saveState();
+      populateFilterSelects();
+      renderPeopleTable();
+      toast(novoGrupo? `Grupo de ${emp.nome} definido como "${novoGrupo}"` : `Grupo de ${emp.nome} removido`);
+    });
+  });
 }
 
 /* ---------------- eval modal ---------------- */
@@ -1372,6 +1418,16 @@ function populatePosicaoSelect(currentValue){
     sel.selectedIndex = 0;
   }
 }
+function populateGrupoSelect(currentValue){
+  const sel = document.getElementById('pfGrupo');
+  const grupos = getGruposDisponiveis();
+  sel.innerHTML = '<option value="">— sem grupo —</option>' + grupos.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('') + `<option value="__new__">+ Novo grupo…</option>`;
+  if(currentValue && grupos.includes(currentValue)){
+    sel.value = currentValue;
+  } else {
+    sel.value = '';
+  }
+}
 let editingPersonId = null;
 function openPersonModal(empId){
   if(!guardEdit()) return;
@@ -1379,17 +1435,21 @@ function openPersonModal(empId){
   const title = document.getElementById('personModalTitle');
   document.getElementById('pfNovaPosicaoRow').style.display = 'none';
   document.getElementById('pfNovaPosicao').value = '';
+  document.getElementById('pfNovoGrupoRow').style.display = 'none';
+  document.getElementById('pfNovoGrupo').value = '';
   if(empId){
     const e = STATE.employees.find(x=>x.id===empId);
     title.textContent = 'Editar colaborador';
     document.getElementById('pfNome').value = e.nome;
     document.getElementById('pfTurno').value = e.turno;
     populatePosicaoSelect(e.posicao);
+    populateGrupoSelect(e.grupo);
   } else {
     title.textContent = 'Incluir colaborador';
     document.getElementById('pfNome').value = '';
     document.getElementById('pfTurno').selectedIndex = 0;
     populatePosicaoSelect(null);
+    populateGrupoSelect(null);
   }
   openModal('modalPerson');
 }
@@ -1402,14 +1462,20 @@ function savePerson(){
     posicao = document.getElementById('pfNovaPosicao').value.trim();
     if(!posicao){ toast('Informe o nome da nova posição'); return; }
   }
+  const grpSel = document.getElementById('pfGrupo');
+  let grupo = grpSel.value;
+  if(grupo==='__new__'){
+    grupo = document.getElementById('pfNovoGrupo').value.trim();
+    if(!grupo){ toast('Informe o nome do novo grupo'); return; }
+  }
   if(!nome){ toast('Informe o nome do colaborador'); return; }
   if(editingPersonId){
     const e = STATE.employees.find(x=>x.id===editingPersonId);
-    e.nome=nome; e.turno=turno; e.posicao=posicao;
+    e.nome=nome; e.turno=turno; e.posicao=posicao; e.grupo=grupo;
     toast('Colaborador atualizado');
   } else {
     const id = 'e'+(Date.now());
-    STATE.employees.push({id, nome, turno, posicao, ativo:true, vals:{}});
+    STATE.employees.push({id, nome, turno, posicao, grupo, ativo:true, vals:{}});
     toast('Colaborador incluído');
   }
   saveState();
@@ -1683,7 +1749,7 @@ function bindStaticListeners(){
   });
 
   // filters
-  ['fSearch','fTurno','fPosicao','fStatus','fAtivos'].forEach(id=>{
+  ['fSearch','fTurno','fPosicao','fGrupo','fStatus','fAtivos'].forEach(id=>{
     const el = document.getElementById(id);
     el.addEventListener('input', ()=>renderAll());
     el.addEventListener('change', ()=>renderAll());
@@ -1694,6 +1760,9 @@ function bindStaticListeners(){
   document.getElementById('btnSavePerson').addEventListener('click', savePerson);
   document.getElementById('pfPosicao').addEventListener('change', (ev)=>{
     document.getElementById('pfNovaPosicaoRow').style.display = ev.target.value==='__new__' ? 'block' : 'none';
+  });
+  document.getElementById('pfGrupo').addEventListener('change', (ev)=>{
+    document.getElementById('pfNovoGrupoRow').style.display = ev.target.value==='__new__' ? 'block' : 'none';
   });
 
   // add skill
