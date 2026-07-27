@@ -548,6 +548,17 @@ body.edit-locked .edit-only{opacity:.45;}
         <input id="skfNovaCat" type="text" placeholder="Ex: TRANSPORTE INTERNO">
       </div>
       <div class="hint">A competência entra imediatamente na Matriz Detalhada e nas tabelas de Gaps &amp; Riscos, pronta para ser avaliada por colaborador.</div>
+
+      <div style="border-top:1px solid #e4e9f2;margin:18px 0 14px 0;"></div>
+
+      <div class="form-row">
+        <label>Excluir uma competência existente</label>
+        <select id="skfDeleteSelect"></select>
+      </div>
+      <div class="hint" style="color:#a33;">Atenção: excluir uma competência apaga também todas as avaliações já feitas nela, para todos os colaboradores. Essa ação não pode ser desfeita.</div>
+      <div style="margin-top:8px;">
+        <button class="btn small danger" id="btnDeleteSkill" type="button">Excluir competência selecionada</button>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn" data-close="modalSkill">Cancelar</button>
@@ -1389,7 +1400,38 @@ function openSkillModal(){
   document.getElementById('skfNome').value = '';
   document.getElementById('skfNovaCat').value = '';
   document.getElementById('skfNovaCatRow').style.display = 'none';
+  populateSkillDeleteSelect();
   openModal('modalSkill');
+}
+function populateSkillDeleteSelect(){
+  const sel = document.getElementById('skfDeleteSelect');
+  const byCat = {};
+  STATE.skills.forEach(s=>{ (byCat[s.cat] = byCat[s.cat]||[]).push(s); });
+  const cats = Object.keys(byCat).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  sel.innerHTML = cats.map(cat=>{
+    const opts = byCat[cat]
+      .slice()
+      .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))
+      .map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+    return `<optgroup label="${esc(cat)}">${opts}</optgroup>`;
+  }).join('');
+}
+function deleteSkill(){
+  if(!guardEdit()) return;
+  const sel = document.getElementById('skfDeleteSelect');
+  const skillId = sel.value;
+  if(!skillId){ toast('Não há competências para excluir'); return; }
+  const skill = STATE.skills.find(s=>s.id===skillId);
+  if(!skill) return;
+  if(!confirm(`Excluir definitivamente a competência "${skill.name}"?\n\nIsso também apaga a avaliação dela de TODOS os colaboradores. Esta ação não pode ser desfeita.`)) return;
+
+  STATE.skills = STATE.skills.filter(s=>s.id!==skillId);
+  STATE.employees.forEach(e=>{ delete e.vals[skillId]; });
+
+  saveState();
+  populateSkillDeleteSelect();
+  renderAll(true);
+  toast(`Competência "${skill.name}" excluída`);
 }
 function saveSkill(){
   const nome = document.getElementById('skfNome').value.trim().toUpperCase();
@@ -1593,6 +1635,7 @@ function bindStaticListeners(){
   // add skill
   ['btnAddSkill','btnAddSkill2'].forEach(id=>document.getElementById(id).addEventListener('click', openSkillModal));
   document.getElementById('btnSaveSkill').addEventListener('click', saveSkill);
+  document.getElementById('btnDeleteSkill').addEventListener('click', deleteSkill);
   document.getElementById('skfCat').addEventListener('change', (ev)=>{
     document.getElementById('skfNovaCatRow').style.display = ev.target.value==='__new__' ? 'block' : 'none';
   });
