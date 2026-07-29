@@ -293,6 +293,14 @@ body.edit-locked .edit-only{opacity:.45;}
     </div>
 
     <div class="nav-group">
+      <div class="nav-label sidebar-label">Melhoria Contínua</div>
+      <button class="navbtn" data-view="feedback">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="sidebar-label">Sugestões &amp; Dificuldades</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
       <div class="nav-label sidebar-label">Dados</div>
       <button class="navbtn edit-only" id="btnAddPerson">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></svg>
@@ -582,6 +590,67 @@ body.edit-locked .edit-only{opacity:.45;}
       </div>
     </section>
 
+    <!-- ===================== SUGESTÕES & DIFICULDADES ===================== -->
+    <section class="view" id="view-feedback">
+      <div class="panel" style="margin-bottom:14px;">
+        <h3>💬 Deixe sua sugestão, melhoria ou dificuldade</h3>
+        <div class="desc">Espaço livre para supervisores registrarem ideias, pontos de melhoria no processo ou dificuldades encontradas no dia a dia. Não precisa de senha para enviar.</div>
+        <div class="form-grid" style="margin-bottom:10px;">
+          <div class="form-row"><label>Seu nome</label><input class="f-input" id="fbNome" type="text" placeholder="Quem está registrando"></div>
+          <div class="form-row"><label>Tipo</label>
+            <select class="f-input" id="fbTipo">
+              <option value="Sugestão">💡 Sugestão</option>
+              <option value="Melhoria">📈 Melhoria de processo</option>
+              <option value="Dificuldade">⚠️ Dificuldade / problema</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Mensagem</label>
+          <textarea id="fbMensagem" rows="3" placeholder="Descreva sua sugestão, melhoria ou dificuldade..." style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button class="btn primary" id="btnSendFeedback">Enviar</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
+          <div>
+            <h3 style="margin-bottom:2px;">Registros recebidos</h3>
+            <div class="desc" style="margin-bottom:0;">Visível para todos — a exclusão de um registro exige o modo de edição (senha).</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <select class="f-input" id="fbStatusFilter" style="max-width:170px;">
+              <option value="all">Status: todos</option>
+              <option value="Pendente">⏳ Pendente</option>
+              <option value="Em andamento">🔧 Em andamento</option>
+              <option value="Implementado">✅ Implementado</option>
+            </select>
+            <select class="f-input" id="fbTipoFilter" style="max-width:220px;">
+              <option value="all">Todos os tipos</option>
+              <option value="Sugestão">💡 Sugestão</option>
+              <option value="Melhoria">📈 Melhoria de processo</option>
+              <option value="Dificuldade">⚠️ Dificuldade / problema</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="tblFeedback">
+            <thead><tr>
+              <th class="sortable" data-k="data">Data</th>
+              <th class="sortable" data-k="nome">Nome</th>
+              <th class="sortable" data-k="tipo">Tipo</th>
+              <th>Mensagem</th>
+              <th class="sortable" data-k="status">Status</th>
+              <th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -825,7 +894,7 @@ const LVL_COLOR = {0:'#e2e5ea',1:'#f4a3a0',2:'#ffd166',3:'#8fd19e',4:'#2f9e57'};
 let STATE = null;      // {employees, skills, settings, meta}
 let selectedCat = null;
 let editMode = false;  // sessão: reseta a cada carregamento da página
-let sortState = {overview:{k:'nome',dir:1}, gaps:{k:'aptos',dir:1}, people:{k:'nome',dir:1}, ranking:{k:'nota',dir:-1}, rankingResumo:{k:'nota',dir:-1}};
+let sortState = {overview:{k:'nome',dir:1}, gaps:{k:'aptos',dir:1}, people:{k:'nome',dir:1}, ranking:{k:'nota',dir:-1}, rankingResumo:{k:'nota',dir:-1}, feedback:{k:'data',dir:-1}};
 if(typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined'){ Chart.register(ChartDataLabels); }
 let charts = {};
 
@@ -838,6 +907,7 @@ function loadState(){
       if(!st.skills || !st.skills.length) st.skills = SEED.skills.map(s=>({...s}));
       if(!st.quizBanks) st.quizBanks = {};
       if(!st.quizResults) st.quizResults = [];
+      if(!st.feedbacks) st.feedbacks = [];
       return st;
     }catch(e){ /* fallthrough */ }
   }
@@ -850,6 +920,7 @@ function seedToState(){
     settings: {threshold:3, minAptos:2, editPassword:null},
     quizBanks: {},
     quizResults: [],
+    feedbacks: [],
     meta: {lastUpdate: new Date().toISOString()}
   };
 }
@@ -963,6 +1034,7 @@ async function cloudPull(isInitial){
         STATE = remote;
         if(!STATE.quizBanks) STATE.quizBanks = {};
         if(!STATE.quizResults) STATE.quizResults = [];
+        if(!STATE.feedbacks) STATE.feedbacks = [];
         localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
         safe(renderAll, 'sincronização (dados remotos)');
         document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
@@ -1858,14 +1930,23 @@ function attachSortHandlers(){
       renderRankingResumo();
     });
   });
+  document.querySelectorAll('#tblFeedback th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      const s = sortState.feedback;
+      s.dir = (s.k===k)? -s.dir : 1; s.k = k;
+      renderFeedbackTable();
+    });
+  });
 }
 
 /* ---------------- navigation ---------------- */
 function switchView(view){
   document.querySelectorAll('.navbtn[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
-  document.getElementById('filterBar').style.display = (view==='people'||view==='quiz')?'none':'flex';
+  document.getElementById('filterBar').style.display = (view==='people'||view==='quiz'||view==='feedback')?'none':'flex';
   if(view==='quiz') renderQuizView();
+  if(view==='feedback') renderFeedbackTable();
 }
 
 /* ============================================================
@@ -2313,6 +2394,85 @@ function renderRankingResumo(){
   }).join('');
 }
 
+/* ============================================================
+   SUGESTÕES & DIFICULDADES
+   ============================================================ */
+const FEEDBACK_ICON = {'Sugestão':'💡','Melhoria':'📈','Dificuldade':'⚠️'};
+function sendFeedback(){
+  const nome = document.getElementById('fbNome').value.trim();
+  const tipo = document.getElementById('fbTipo').value;
+  const mensagem = document.getElementById('fbMensagem').value.trim();
+  if(!nome){ toast('Informe seu nome'); return; }
+  if(!mensagem){ toast('Escreva a mensagem antes de enviar'); return; }
+  if(!STATE.feedbacks) STATE.feedbacks = [];
+  STATE.feedbacks.push({
+    id: newId('f'), nome, tipo, mensagem, status: 'Pendente', data: new Date().toISOString()
+  });
+  saveState();
+  document.getElementById('fbMensagem').value = '';
+  toast('✅ Enviado! Obrigado pela contribuição.');
+  renderFeedbackTable();
+}
+const FEEDBACK_STATUS_ICON = {'Pendente':'⏳','Em andamento':'🔧','Implementado':'✅'};
+const FEEDBACK_STATUS_CLASS = {'Pendente':'na','Em andamento':'dev','Implementado':'apto'};
+function renderFeedbackTable(){
+  const filterVal = document.getElementById('fbTipoFilter').value;
+  const statusVal = document.getElementById('fbStatusFilter').value;
+  let rows = (STATE.feedbacks || []).slice();
+  if(filterVal && filterVal!=='all') rows = rows.filter(r=>r.tipo===filterVal);
+  if(statusVal && statusVal!=='all') rows = rows.filter(r=>(r.status||'Pendente')===statusVal);
+  rows = rows.map(r=>({...r, status: r.status || 'Pendente'}));
+  const {k,dir} = sortState.feedback;
+  rows.sort((a,b)=>{
+    let av=a[k], bv=b[k];
+    if(k==='data'){ av=new Date(a.data).getTime(); bv=new Date(b.data).getTime(); }
+    if(typeof av==='string') return av.localeCompare(bv)*dir;
+    return (av-bv)*dir;
+  });
+
+  const tbody = document.querySelector('#tblFeedback tbody');
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Nenhum registro ainda. Seja o primeiro a contribuir! 🙂</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(r=>{
+    const status = r.status || 'Pendente';
+    const statusOptions = ['Pendente','Em andamento','Implementado'].map(s=>
+      `<option value="${s}" ${s===status?'selected':''}>${FEEDBACK_STATUS_ICON[s]} ${s}</option>`
+    ).join('');
+    return `<tr>
+      <td style="white-space:nowrap;">${fmtDate(r.data)}</td>
+      <td class="name-cell">${esc(r.nome)}</td>
+      <td style="white-space:nowrap;">${FEEDBACK_ICON[r.tipo]||''} ${esc(r.tipo)}</td>
+      <td style="white-space:normal;max-width:420px;">${esc(r.mensagem)}</td>
+      <td>
+        <span class="tag ${FEEDBACK_STATUS_CLASS[status]}" style="margin-right:6px;">${FEEDBACK_STATUS_ICON[status]} ${status}</span>
+        <select class="f-input fb-status-select edit-only" data-status-fb="${r.id}" style="max-width:150px;display:inline-block;width:auto;">${statusOptions}</select>
+      </td>
+      <td><button class="btn small danger edit-only" data-del-fb="${r.id}">Excluir</button></td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('[data-status-fb]').forEach(sel=>sel.addEventListener('change', ()=>{
+    if(!guardEdit()){ sel.value = (STATE.feedbacks.find(x=>x.id===sel.dataset.statusFb)||{}).status || 'Pendente'; return; }
+    const fb = STATE.feedbacks.find(x=>x.id===sel.dataset.statusFb);
+    if(!fb) return;
+    fb.status = sel.value;
+    saveState();
+    renderFeedbackTable();
+    toast(`Status atualizado: ${FEEDBACK_STATUS_ICON[fb.status]} ${fb.status}`);
+  }));
+
+  tbody.querySelectorAll('[data-del-fb]').forEach(b=>b.addEventListener('click', ()=>{
+    if(!guardEdit()) return;
+    if(!confirm('Excluir este registro?')) return;
+    STATE.feedbacks = STATE.feedbacks.filter(r=>r.id!==b.dataset.delFb);
+    saveState();
+    renderFeedbackTable();
+    toast('Registro excluído');
+  }));
+}
+
 /* ---------------- master render ---------------- */
 function safe(fn, label){
   try{ fn(); }catch(err){ console.warn('Erro ao renderizar: '+label, err); }
@@ -2519,6 +2679,11 @@ function bindStaticListeners(){
   document.getElementById('qrSkillFilter').addEventListener('change', renderRankingTable);
   document.getElementById('qrGrupoFilter').addEventListener('change', renderRankingTable);
   document.getElementById('qrSearch').addEventListener('input', renderRankingTable);
+
+  // feedback (sugestões e dificuldades)
+  document.getElementById('btnSendFeedback').addEventListener('click', sendFeedback);
+  document.getElementById('fbTipoFilter').addEventListener('change', renderFeedbackTable);
+  document.getElementById('fbStatusFilter').addEventListener('change', renderFeedbackTable);
 
   // modal close
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>closeModal(b.dataset.close)));
