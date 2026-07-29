@@ -536,12 +536,32 @@ body.edit-locked .edit-only{opacity:.45;}
           <h3>Ranking de avaliações</h3>
           <div class="desc">Histórico de notas de todos os quizzes já aplicados. Clique nas colunas para ordenar.</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <select class="f-input" id="qrAreaFilter" style="max-width:220px;"></select>
-            <select class="f-input" id="qrSkillFilter" style="max-width:320px;"></select>
-            <select class="f-input" id="qrGrupoFilter" style="max-width:220px;"></select>
+            <input class="f-input" id="qrSearch" type="text" placeholder="🔍 Buscar colaborador..." style="max-width:220px;">
+            <select class="f-input" id="qrAreaFilter" style="max-width:200px;"></select>
+            <select class="f-input" id="qrSkillFilter" style="max-width:280px;"></select>
+            <select class="f-input" id="qrGrupoFilter" style="max-width:200px;"></select>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom:14px;">
+          <h3 style="margin-bottom:2px;">Resumo por colaborador</h3>
+          <div class="desc">Total consolidado (soma de acertos ÷ soma de perguntas) considerando os filtros acima — sem repetir uma linha por competência.</div>
+          <div class="table-wrap">
+            <table id="tblRankingResumo">
+              <thead><tr>
+                <th class="sortable" data-k="nome">Colaborador</th>
+                <th class="sortable" data-k="grupo">Grupo</th>
+                <th class="sortable" data-k="qtd">Competências avaliadas</th>
+                <th class="sortable" data-k="acertos">Acertos / Total</th>
+                <th class="sortable" data-k="nota">Nota geral</th>
+                <th class="sortable" data-k="ultimaData">Última avaliação</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
         </div>
         <div class="panel">
+          <h3 style="margin-bottom:2px;">Detalhado por competência</h3>
+          <div class="desc">Cada linha é uma competência avaliada individualmente.</div>
           <div class="table-wrap">
             <table id="tblRanking">
               <thead><tr>
@@ -805,7 +825,7 @@ const LVL_COLOR = {0:'#e2e5ea',1:'#f4a3a0',2:'#ffd166',3:'#8fd19e',4:'#2f9e57'};
 let STATE = null;      // {employees, skills, settings, meta}
 let selectedCat = null;
 let editMode = false;  // sessão: reseta a cada carregamento da página
-let sortState = {overview:{k:'nome',dir:1}, gaps:{k:'aptos',dir:1}, people:{k:'nome',dir:1}, ranking:{k:'nota',dir:-1}};
+let sortState = {overview:{k:'nome',dir:1}, gaps:{k:'aptos',dir:1}, people:{k:'nome',dir:1}, ranking:{k:'nota',dir:-1}, rankingResumo:{k:'nota',dir:-1}};
 if(typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined'){ Chart.register(ChartDataLabels); }
 let charts = {};
 
@@ -1830,6 +1850,14 @@ function attachSortHandlers(){
       renderRankingTable();
     });
   });
+  document.querySelectorAll('#tblRankingResumo th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const k = th.dataset.k;
+      const s = sortState.rankingResumo;
+      s.dir = (s.k===k)? -s.dir : 1; s.k = k;
+      renderRankingResumo();
+    });
+  });
 }
 
 /* ---------------- navigation ---------------- */
@@ -2176,10 +2204,11 @@ function populateRankingCompetenciaFilter(){
   if(curSkill && (curSkill==='all' || relevantSkills.some(s=>s.id===curSkill))) skillSel.value = curSkill; else skillSel.value = 'all';
 }
 
-function renderRankingTable(){
+function getFilteredRankingRows(){
   const areaVal = document.getElementById('qrAreaFilter').value;
   const skillVal = document.getElementById('qrSkillFilter').value;
   const grupoVal = document.getElementById('qrGrupoFilter').value;
+  const search = (document.getElementById('qrSearch').value || '').trim().toLowerCase();
   let rows = STATE.quizResults.map(r=>{
     const emp = STATE.employees.find(e=>e.id===r.empId);
     const sk = skillById(r.skillId);
@@ -2194,6 +2223,12 @@ function renderRankingTable(){
   if(areaVal && areaVal!=='all') rows = rows.filter(r=>r.cat===areaVal);
   if(skillVal && skillVal!=='all') rows = rows.filter(r=>r.skillId===skillVal);
   if(grupoVal && grupoVal!=='all') rows = rows.filter(r=>r.grupo===grupoVal);
+  if(search) rows = rows.filter(r=>r.nome.toLowerCase().includes(search));
+  return rows;
+}
+
+function renderRankingTable(){
+  const rows = getFilteredRankingRows();
 
   const {k,dir} = sortState.ranking;
   rows.sort((a,b)=>{
@@ -2206,31 +2241,76 @@ function renderRankingTable(){
   const tbody = document.querySelector('#tblRanking tbody');
   if(rows.length===0){
     tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">Nenhum quiz aplicado ainda com esses filtros.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = rows.map(r=>{
+      const notaColor = r.nota>=70?'apto':r.nota>=40?'dev':'baixo';
+      return `<tr>
+        <td class="name-cell">${esc(r.nome)}</td>
+        <td>${esc(r.grupo)}</td>
+        <td><span class="risk-cat-pill" style="background:${catColor(r.cat)}">${esc(r.cat)}</span></td>
+        <td>${esc(r.skill)}</td>
+        <td><span class="tag ${notaColor}">${r.nota}%</span></td>
+        <td>${r.acertos}/${r.total}</td>
+        <td>${fmtDate(r.data)}</td>
+        <td>${esc(r.avaliador||'—')}</td>
+        <td><button class="btn small danger edit-only" data-del-rank="${r.id}">Excluir</button></td>
+      </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('[data-del-rank]').forEach(b=>b.addEventListener('click', ()=>{
+      if(!guardEdit()) return;
+      if(!confirm('Excluir este registro do ranking?')) return;
+      STATE.quizResults = STATE.quizResults.filter(r=>r.id!==b.dataset.delRank);
+      saveState();
+      renderRankingTable();
+      renderRankingResumo();
+      toast('Registro excluído');
+    }));
+  }
+
+  renderRankingResumo();
+}
+
+function renderRankingResumo(){
+  const rows = getFilteredRankingRows();
+  const byEmp = {};
+  rows.forEach(r=>{
+    if(!byEmp[r.empId]) byEmp[r.empId] = { empId:r.empId, nome:r.nome, grupo:r.grupo, qtd:0, acertos:0, total:0, ultimaData:r.data };
+    const g = byEmp[r.empId];
+    g.qtd++;
+    g.acertos += r.acertos;
+    g.total += r.total;
+    if(new Date(r.data) > new Date(g.ultimaData)) g.ultimaData = r.data;
+  });
+  let resumoRows = Object.values(byEmp).map(g=>({
+    ...g,
+    nota: g.total>0 ? Math.round((g.acertos/g.total)*100) : 0
+  }));
+
+  const {k,dir} = sortState.rankingResumo;
+  resumoRows.sort((a,b)=>{
+    let av=a[k], bv=b[k];
+    if(k==='ultimaData'){ av=new Date(a.ultimaData).getTime(); bv=new Date(b.ultimaData).getTime(); }
+    if(typeof av==='string') return av.localeCompare(bv)*dir;
+    return (av-bv)*dir;
+  });
+
+  const tbody = document.querySelector('#tblRankingResumo tbody');
+  if(resumoRows.length===0){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">Nenhum quiz aplicado ainda com esses filtros.</div></td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map(r=>{
+  tbody.innerHTML = resumoRows.map(r=>{
     const notaColor = r.nota>=70?'apto':r.nota>=40?'dev':'baixo';
     return `<tr>
       <td class="name-cell">${esc(r.nome)}</td>
       <td>${esc(r.grupo)}</td>
-      <td><span class="risk-cat-pill" style="background:${catColor(r.cat)}">${esc(r.cat)}</span></td>
-      <td>${esc(r.skill)}</td>
-      <td><span class="tag ${notaColor}">${r.nota}%</span></td>
+      <td>${r.qtd}</td>
       <td>${r.acertos}/${r.total}</td>
-      <td>${fmtDate(r.data)}</td>
-      <td>${esc(r.avaliador||'—')}</td>
-      <td><button class="btn small danger edit-only" data-del-rank="${r.id}">Excluir</button></td>
+      <td><span class="tag ${notaColor}">${r.nota}%</span></td>
+      <td>${fmtDate(r.ultimaData)}</td>
     </tr>`;
   }).join('');
-
-  tbody.querySelectorAll('[data-del-rank]').forEach(b=>b.addEventListener('click', ()=>{
-    if(!guardEdit()) return;
-    if(!confirm('Excluir este registro do ranking?')) return;
-    STATE.quizResults = STATE.quizResults.filter(r=>r.id!==b.dataset.delRank);
-    saveState();
-    renderRankingTable();
-    toast('Registro excluído');
-  }));
 }
 
 /* ---------------- master render ---------------- */
@@ -2438,6 +2518,7 @@ function bindStaticListeners(){
   });
   document.getElementById('qrSkillFilter').addEventListener('change', renderRankingTable);
   document.getElementById('qrGrupoFilter').addEventListener('change', renderRankingTable);
+  document.getElementById('qrSearch').addEventListener('input', renderRankingTable);
 
   // modal close
   document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>closeModal(b.dataset.close)));
