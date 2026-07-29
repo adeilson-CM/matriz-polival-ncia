@@ -846,6 +846,7 @@ body.edit-locked .edit-only{opacity:.45;}
   <div class="modal">
     <div class="modal-head"><h3 id="questionModalTitle">Nova pergunta</h3><button class="x-btn" data-close="modalQuestion">✕</button></div>
     <div class="modal-body">
+      <div class="hint" id="qfCountHint" style="margin-bottom:10px;"></div>
       <div class="form-row">
         <label>Pergunta</label>
         <textarea id="qfPergunta" rows="2" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
@@ -858,7 +859,8 @@ body.edit-locked .edit-only{opacity:.45;}
     </div>
     <div class="modal-foot">
       <button class="btn" data-close="modalQuestion">Cancelar</button>
-      <button class="btn primary" id="btnSaveQuestion">Salvar</button>
+      <button class="btn" id="btnSaveAddAnother">Salvar e adicionar outra +</button>
+      <button class="btn primary" id="btnSaveQuestion">Salvar e fechar</button>
     </div>
   </div>
 </div>
@@ -2074,6 +2076,11 @@ function openQuestionModal(qid){
   if(!skillId){ toast('Selecione uma competência primeiro'); return; }
   editingQuestionId = qid || null;
   document.getElementById('questionModalTitle').textContent = qid ? 'Editar pergunta' : 'Nova pergunta';
+  const qtdAtual = (STATE.quizBanks[skillId]||[]).length;
+  const skill = skillById(skillId);
+  document.getElementById('qfCountHint').textContent = qid
+    ? `Editando pergunta de "${skill.name}".`
+    : `"${skill.name}" já tem ${qtdAtual} pergunta(s) cadastrada(s). Esta será a ${qtdAtual+1}ª.`;
   if(qid){
     const q = (STATE.quizBanks[skillId]||[]).find(x=>x.qid===qid);
     document.getElementById('qfPergunta').value = q.pergunta;
@@ -2084,7 +2091,7 @@ function openQuestionModal(qid){
   }
   openModal('modalQuestion');
 }
-function saveQuestion(){
+function saveQuestion(keepOpenForAnother){
   const skillId = currentBankSkillId();
   if(!skillId){ toast('Selecione uma competência primeiro'); return; }
   const pergunta = document.getElementById('qfPergunta').value.trim();
@@ -2103,11 +2110,24 @@ function saveQuestion(){
     toast('Pergunta atualizada');
   } else {
     STATE.quizBanks[skillId].push({qid:newId('q'), pergunta, alternativas, correta});
-    toast('Pergunta incluída');
+    toast('Pergunta incluída — total: ' + STATE.quizBanks[skillId].length);
   }
   saveState();
-  closeModal('modalQuestion');
   renderQuestionsList();
+
+  if(keepOpenForAnother){
+    // limpa o formulário e mantém o modal aberto, pronto para a próxima pergunta
+    editingQuestionId = null;
+    document.getElementById('questionModalTitle').textContent = 'Nova pergunta';
+    document.getElementById('qfPergunta').value = '';
+    renderAlternativasBox(['','','',''], 0);
+    const qtdAtual = (STATE.quizBanks[skillId]||[]).length;
+    const skill = skillById(skillId);
+    document.getElementById('qfCountHint').textContent = `"${skill.name}" já tem ${qtdAtual} pergunta(s) cadastrada(s). Esta será a ${qtdAtual+1}ª.`;
+    document.getElementById('qfPergunta').focus();
+  } else {
+    closeModal('modalQuestion');
+  }
 }
 
 /* --------- Aplicar quiz (múltiplas competências) --------- */
@@ -2656,7 +2676,8 @@ function bindStaticListeners(){
   });
   document.getElementById('qbSkill').addEventListener('change', renderQuestionsList);
   document.getElementById('btnAddQuestion').addEventListener('click', ()=>openQuestionModal(null));
-  document.getElementById('btnSaveQuestion').addEventListener('click', saveQuestion);
+  document.getElementById('btnSaveQuestion').addEventListener('click', ()=>saveQuestion(false));
+  document.getElementById('btnSaveAddAnother').addEventListener('click', ()=>saveQuestion(true));
   document.getElementById('btnAddAlternativa').addEventListener('click', ()=>{
     const alts = getAlternativasFromBox();
     if(alts.length>=6){ toast('Máximo de 6 alternativas'); return; }
