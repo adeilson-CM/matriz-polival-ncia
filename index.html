@@ -53,7 +53,8 @@ body{font-size:14px;line-height:1.4;}
 .sidebar-label{opacity:0;transition:opacity .12s ease;}
 .sidebar:hover .sidebar-label{opacity:1;transition:opacity .18s ease .08s;}
 .brand{display:flex;align-items:center;gap:10px;padding:6px 4px 18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;transition:padding .22s;}
-.brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#ff9466);display:flex;align-items:center;justify-content:center;font-weight:800;color:#1a0d06;font-size:15px;flex:none;}
+.brand-mark{width:40px;height:40px;border-radius:9px;background:#ffffff;display:flex;align-items:center;justify-content:center;flex:none;padding:5px;box-sizing:border-box;}
+.brand-mark img{width:100%;height:100%;object-fit:contain;}
 .brand-text b{display:block;font-size:14px;color:#fff;letter-spacing:.2px;}
 .brand-text span{display:block;font-size:11px;color:#93a3c2;}
 
@@ -259,7 +260,7 @@ body.edit-locked .edit-only{opacity:.45;}
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">GT</div>
+      <div class="brand-mark"><img src="data:image/png;base64,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" alt="Gestamp"></div>
       <div class="brand-text sidebar-label"><b>Gestamp Taubaté</b><span>Logística · PCP</span></div>
     </div>
 
@@ -504,15 +505,26 @@ body.edit-locked .edit-only{opacity:.45;}
       <div id="quizPane-aplicar" style="display:none;">
         <div class="panel" style="margin-bottom:14px;">
           <h3>Aplicar quiz de avaliação</h3>
-          <div class="desc">Selecione o colaborador e a competência para iniciar a avaliação. É preciso ter o modo de edição ativado (senha) para aplicar.</div>
+          <div class="desc">Selecione o colaborador e uma ou mais competências para avaliar de uma vez. É preciso ter o modo de edição ativado (senha) para aplicar.</div>
           <div class="form-grid" style="margin-bottom:10px;">
             <div class="form-row"><label>Colaborador</label><select class="f-input" id="qaEmp"></select></div>
             <div class="form-row"><label>Seu nome (avaliador)</label><input class="f-input" id="qaAvaliador" type="text" placeholder="Quem está aplicando o quiz"></div>
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+
+          <div class="form-row">
+            <label>Área</label>
             <select class="f-input" id="qaArea" style="max-width:260px;"></select>
-            <select class="f-input" id="qaSkill" style="max-width:360px;"></select>
-            <button class="btn primary small" id="btnStartQuiz">Iniciar quiz →</button>
+          </div>
+          <div class="form-row">
+            <label>Competências desta área <span class="hint" style="display:inline;">(marque quantas quiser)</span></label>
+            <div id="qaSkillChecklist" style="max-height:220px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fbfcfe;"></div>
+          </div>
+          <div class="form-row">
+            <label>Competências selecionadas <span class="badge-count" id="qaSelectedCount">0</span></label>
+            <div id="qaSelectedChips" class="chipset"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button class="btn primary" id="btnStartQuiz">Iniciar quiz →</button>
           </div>
         </div>
         <div class="panel" id="qaQuizBox" style="display:none;"></div>
@@ -1025,6 +1037,8 @@ function applyEditModeUI(){
     btn.textContent = editMode ? '🔓 Bloquear edição' : '🔒 Ativar edição';
     btn.classList.toggle('unlocked', editMode);
   }
+  const qbList = document.getElementById('qbQuestionsList');
+  if(qbList) safe(renderQuestionsList, 'banco de perguntas (edit toggle)');
 }
 function guardEdit(){
   if(!editMode){ toast('Ative o modo de edição (🔒) para alterar dados'); return false; }
@@ -1850,6 +1864,8 @@ function switchQuizTab(tab){
   if(tab==='ranking') renderRankingTable();
 }
 
+let qaSelectedSkillIds = [];
+
 function renderQuizView(){
   const qbArea = document.getElementById('qbArea');
   populateAreaSelect(qbArea);
@@ -1858,8 +1874,9 @@ function renderQuizView(){
 
   const qaArea = document.getElementById('qaArea');
   populateAreaSelect(qaArea);
-  populateSkillSelectForArea(document.getElementById('qaSkill'), qaArea.value);
   populateQaEmpSelect();
+  renderQaSkillChecklist();
+  renderQaSelectedChips();
 
   populateRankingSkillFilter();
   renderRankingTable();
@@ -1878,6 +1895,10 @@ function currentBankSkillId(){ return document.getElementById('qbSkill').value; 
 
 function renderQuestionsList(){
   const box = document.getElementById('qbQuestionsList');
+  if(!editMode){
+    box.innerHTML = `<div class="empty-state">🔒 Ative o modo de edição (senha) para ver as perguntas e respostas desta competência.<br><span style="font-size:11.5px;">Isso evita que o colaborador veja as respostas antes de fazer o quiz.</span></div>`;
+    return;
+  }
   const skillId = currentBankSkillId();
   if(!skillId){
     box.innerHTML = `<div class="empty-state">Nenhuma competência cadastrada nesta área ainda.</div>`;
@@ -1980,68 +2001,137 @@ function saveQuestion(){
   renderQuestionsList();
 }
 
-/* --------- Aplicar quiz --------- */
+/* --------- Aplicar quiz (múltiplas competências) --------- */
+function renderQaSkillChecklist(){
+  const area = document.getElementById('qaArea').value;
+  const box = document.getElementById('qaSkillChecklist');
+  const skills = STATE.skills.filter(s=>s.cat===area).slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  if(skills.length===0){
+    box.innerHTML = '<div style="color:var(--ink-400);font-size:12.6px;">Nenhuma competência nesta área.</div>';
+    return;
+  }
+  box.innerHTML = skills.map(s=>{
+    const checked = qaSelectedSkillIds.includes(s.id);
+    const nQuestions = (STATE.quizBanks[s.id]||[]).length;
+    return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px;">
+      <input type="checkbox" data-qa-skill="${esc(s.id)}" ${checked?'checked':''} style="width:16px;height:16px;flex:none;">
+      <span style="flex:1;">${esc(s.name)}</span>
+      <span style="font-size:10.5px;color:${nQuestions>0?'var(--ink-400)':'#c0392b'};">${nQuestions>0?nQuestions+' pergunta(s)':'sem perguntas'}</span>
+    </label>`;
+  }).join('');
+  box.querySelectorAll('[data-qa-skill]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const id = cb.dataset.qaSkill;
+      if(cb.checked){ if(!qaSelectedSkillIds.includes(id)) qaSelectedSkillIds.push(id); }
+      else { qaSelectedSkillIds = qaSelectedSkillIds.filter(x=>x!==id); }
+      renderQaSelectedChips();
+    });
+  });
+}
+function renderQaSelectedChips(){
+  document.getElementById('qaSelectedCount').textContent = qaSelectedSkillIds.length;
+  const box = document.getElementById('qaSelectedChips');
+  if(qaSelectedSkillIds.length===0){
+    box.innerHTML = '<span style="font-size:12px;color:var(--ink-400);">Nenhuma competência selecionada ainda.</span>';
+    return;
+  }
+  box.innerHTML = qaSelectedSkillIds.map(id=>{
+    const s = skillById(id);
+    if(!s) return '';
+    return `<span class="chip active" data-qa-chip="${esc(id)}" style="cursor:pointer;" title="Clique para remover">${esc(s.name)} ✕</span>`;
+  }).join('');
+  box.querySelectorAll('[data-qa-chip]').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      const id = chip.dataset.qaChip;
+      qaSelectedSkillIds = qaSelectedSkillIds.filter(x=>x!==id);
+      renderQaSkillChecklist();
+      renderQaSelectedChips();
+    });
+  });
+}
+
 function startQuiz(){
   if(!guardEdit()) return;
   const empId = document.getElementById('qaEmp').value;
-  const skillId = document.getElementById('qaSkill').value;
   const avaliador = document.getElementById('qaAvaliador').value.trim();
   if(!empId){ toast('Selecione o colaborador'); return; }
-  if(!skillId){ toast('Selecione a competência'); return; }
   if(!avaliador){ toast('Informe o nome de quem está aplicando o quiz'); return; }
-  const perguntas = STATE.quizBanks[skillId] || [];
-  if(perguntas.length===0){ toast('Nenhuma pergunta cadastrada para esta competência. Cadastre no "Banco de Perguntas" primeiro.'); return; }
+  if(qaSelectedSkillIds.length===0){ toast('Selecione ao menos uma competência'); return; }
+
+  const batch = [];
+  const semPerguntas = [];
+  qaSelectedSkillIds.forEach(skillId=>{
+    const perguntas = STATE.quizBanks[skillId] || [];
+    const skill = skillById(skillId);
+    if(perguntas.length===0){ semPerguntas.push(skill ? skill.name : skillId); return; }
+    batch.push({ skillId, skill, perguntas });
+  });
+  if(batch.length===0){ toast('Nenhuma das competências selecionadas tem perguntas cadastradas ainda.'); return; }
+  if(semPerguntas.length>0){ toast('⚠️ Pulando sem perguntas: ' + semPerguntas.join(', ')); }
 
   const emp = STATE.employees.find(e=>e.id===empId);
-  const skill = skillById(skillId);
   const box = document.getElementById('qaQuizBox');
   box.style.display = 'block';
   box.innerHTML = `
     <h3>Avaliando: ${esc(emp.nome)}</h3>
-    <div class="desc">${esc(skill.cat)} — ${esc(skill.name)}</div>
+    <div class="desc">${batch.length} competência(s) nesta rodada</div>
     <div id="qaQuestionsBox" style="margin-top:10px;">
-      ${perguntas.map((q,i)=>`
-        <div style="padding:12px 0;${i>0?'border-top:1px solid var(--line);':''}">
-          <div style="font-weight:700;margin-bottom:8px;">${i+1}. ${esc(q.pergunta)}</div>
-          ${q.alternativas.map((a,ai)=>`
-            <label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px;">
-              <input type="radio" name="qa_${q.qid}" value="${ai}" style="width:16px;height:16px;">
-              ${esc(a)}
-            </label>`).join('')}
+      ${batch.map((b,bi)=>`
+        <div class="eval-cat" style="margin-top:${bi>0?'18px':'0'};">
+          <h4>${esc(b.skill.cat)} — ${esc(b.skill.name)}</h4>
+          ${b.perguntas.map((q,i)=>`
+            <div style="padding:10px 0;${i>0?'border-top:1px solid var(--line);':''}">
+              <div style="font-weight:700;margin-bottom:8px;">${i+1}. ${esc(q.pergunta)}</div>
+              ${q.alternativas.map((a,ai)=>`
+                <label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px;">
+                  <input type="radio" name="qa_${b.skillId}_${q.qid}" value="${ai}" style="width:16px;height:16px;">
+                  ${esc(a)}
+                </label>`).join('')}
+            </div>`).join('')}
         </div>`).join('')}
     </div>
     <div style="margin-top:14px;display:flex;justify-content:flex-end;">
-      <button class="btn primary" id="btnFinishQuiz">Finalizar e calcular nota</button>
+      <button class="btn primary" id="btnFinishQuiz">Finalizar e calcular notas</button>
     </div>
     <div id="qaResultBox" style="margin-top:14px;"></div>
   `;
-  document.getElementById('btnFinishQuiz').addEventListener('click', ()=>finishQuiz(empId, skillId, avaliador, perguntas));
+  document.getElementById('btnFinishQuiz').addEventListener('click', ()=>finishQuiz(empId, avaliador, batch));
   box.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-function finishQuiz(empId, skillId, avaliador, perguntas){
-  let acertos = 0;
-  perguntas.forEach(q=>{
-    const sel = document.querySelector(`input[name="qa_${q.qid}"]:checked`);
-    if(sel && +sel.value === q.correta) acertos++;
-  });
-  const total = perguntas.length;
-  const nota = Math.round((acertos/total)*100);
-
-  STATE.quizResults.push({
-    id: newId('r'), empId, skillId, avaliador, acertos, total, nota,
-    data: new Date().toISOString()
+function finishQuiz(empId, avaliador, batch){
+  const emp = STATE.employees.find(e=>e.id===empId);
+  const resultados = batch.map(b=>{
+    let acertos = 0;
+    b.perguntas.forEach(q=>{
+      const sel = document.querySelector(`input[name="qa_${b.skillId}_${q.qid}"]:checked`);
+      if(sel && +sel.value === q.correta) acertos++;
+    });
+    const total = b.perguntas.length;
+    const nota = Math.round((acertos/total)*100);
+    STATE.quizResults.push({
+      id: newId('r'), empId, skillId: b.skillId, avaliador, acertos, total, nota,
+      data: new Date().toISOString()
+    });
+    return { skill: b.skill, acertos, total, nota };
   });
   saveState();
 
-  const emp = STATE.employees.find(e=>e.id===empId);
   document.getElementById('qaResultBox').innerHTML = `
-    <div class="panel" style="background:${nota>=70?'#e3f7e8':nota>=40?'#fff3d6':'#fde5e2'};box-shadow:none;">
-      <h3 style="margin-bottom:6px;">Resultado: ${nota}%</h3>
-      <div>${esc(emp.nome)} acertou ${acertos} de ${total} perguntas.</div>
+    <div class="panel" style="box-shadow:none;border:1px solid var(--line);">
+      <h3 style="margin-bottom:10px;">Resultado — ${esc(emp.nome)}</h3>
+      ${resultados.map(r=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);">
+          <span>${esc(r.skill.cat)} — ${esc(r.skill.name)}</span>
+          <span class="tag ${r.nota>=70?'apto':r.nota>=40?'dev':'baixo'}">${r.nota}% (${r.acertos}/${r.total})</span>
+        </div>`).join('')}
     </div>`;
   document.getElementById('btnFinishQuiz').disabled = true;
-  toast(`✅ Nota registrada: ${nota}%`);
+  toast(`✅ ${resultados.length} nota(s) registrada(s)`);
+
+  qaSelectedSkillIds = [];
+  renderQaSkillChecklist();
+  renderQaSelectedChips();
   populateRankingSkillFilter();
 }
 
@@ -2336,8 +2426,8 @@ function bindStaticListeners(){
   });
 
   // quiz - aplicar
-  document.getElementById('qaArea').addEventListener('change', (ev)=>{
-    populateSkillSelectForArea(document.getElementById('qaSkill'), ev.target.value, false);
+  document.getElementById('qaArea').addEventListener('change', ()=>{
+    renderQaSkillChecklist();
   });
   document.getElementById('btnStartQuiz').addEventListener('click', startQuiz);
 
