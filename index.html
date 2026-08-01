@@ -656,7 +656,7 @@ body.edit-locked .edit-only{opacity:.45;}
 
 <!-- ============ MODAL: Sincronização em nuvem ============ -->
 <div class="overlay" id="modalCloud">
-  <div class="modal">
+  <div class="modal wide">
     <div class="modal-head"><h3>☁️ Sincronização em nuvem</h3><button class="x-btn" data-close="modalCloud">✕</button></div>
     <div class="modal-body">
       <div class="form-row">
@@ -669,8 +669,19 @@ body.edit-locked .edit-only{opacity:.45;}
       </div>
       <div id="cloudStatusMsg" style="font-size:12.5px;color:var(--ink-600);line-height:1.5;margin-top:4px;"></div>
       <div style="font-size:11.8px;color:var(--ink-400);margin-top:10px;line-height:1.5;">
-        Com isso configurado, toda alteração feita por qualquer pessoa (em qualquer computador) é salva na planilha do Google
+        Com isso configurado, toda alteração feita por qualquer pessoa (em qualquer computador) é salva na nuvem
         e todo mundo que tiver o app aberto recebe a atualização automaticamente em poucos segundos.
+      </div>
+
+      <div style="border-top:1px solid #e4e9f2;margin:18px 0 14px 0;"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <label style="font-size:11.6px;font-weight:700;color:var(--ink-600);margin-bottom:0;">📜 Histórico de versões (nunca é apagado)</label>
+        <button class="btn small" id="btnCloudHistoryRefresh" type="button">Atualizar lista</button>
+      </div>
+      <div class="hint" style="margin-bottom:8px;">Cada gravação na nuvem fica guardada para sempre. Se algo for perdido ou sobrescrito por engano, você pode restaurar qualquer versão anterior daqui — mesmo que tenha sido salva há meses.</div>
+      <div id="cloudHistoryBox" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+        <div style="padding:14px;color:var(--ink-400);font-size:12.5px;">Clique em "Atualizar lista" para carregar o histórico.</div>
       </div>
     </div>
     <div class="modal-foot" style="display:flex;gap:8px;justify-content:space-between;">
@@ -982,7 +993,7 @@ const CLOUD_CFG_KEY = 'gestamp_matriz_cloud_cfg_v1';
 // Script, basta atualizar essa constante e publicar de novo no GitHub.
 const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyo3QgYxv7sCtxTXIJRW0AIDwhW68RDOHZNRnBh6LdGb8k76W5EVQEmMAQ3JYA05Xn4-A/exec';
 
-let CLOUD = { url:null, user:'', lastPulledAt:null, lastPullOk:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false };
+let CLOUD = { url:null, user:'', lastPulledAt:null, lastPullOk:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false, pushRetries:0, pushFailedAt:null, pushRetryTimer:null };
 
 function loadCloudCfg(){
   try{
@@ -1026,6 +1037,7 @@ async function cloudPull(isInitial){
     const res = await fetch(CLOUD.url + '?t=' + Date.now());
     if(!res.ok) throw new Error('HTTP '+res.status);
     const out = await res.json();
+    if(out && out.error) throw new Error('Servidor: '+out.error);
     if(out && out.data){
       hadRemoteData = true;
       const remote = JSON.parse(out.data);
@@ -1069,25 +1081,34 @@ async function cloudPushNow(){
     const res = await fetch(CLOUD.url, {
       method:'POST',
       headers:{'Content-Type':'text/plain;charset=utf-8'}, // evita preflight CORS no Apps Script
-      body: JSON.stringify({data: STATE, updatedBy: CLOUD.user||''})
+      body: JSON.stringify({data: JSON.stringify(STATE), updatedBy: CLOUD.user||''})
     });
     if(!res.ok) throw new Error('HTTP '+res.status);
-    // Alinha o "relógio" local com o horário que o servidor confirmou ter
-    // salvo. Sem isso, a próxima sincronização automática acha que o
-    // servidor tem uma versão "mais nova" (porque o carimbo dele é sempre
-    // alguns instantes depois do carimbo local da edição) e mostra um
-    // aviso falso de "dados atualizados por outro colaborador".
+    let serverError = null;
     try{
       const out = await res.json();
+      if(out && out.error) serverError = out.error;
       if(out && out.updatedAt){
         STATE.meta.lastUpdate = out.updatedAt;
         localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
       }
     }catch(parseErr){ /* resposta sem JSON válido, ignora */ }
+    if(serverError) throw new Error('Servidor: '+serverError);
     setSyncBadge('online', 'Online');
+    CLOUD.pushRetries = 0;
+    CLOUD.pushFailedAt = null;
   }catch(err){
     console.warn('Erro ao sincronizar (push):', err);
-    setSyncBadge('offline', 'Offline');
+    setSyncBadge('offline', 'Offline — suas alterações ainda não foram salvas na nuvem!');
+    CLOUD.pushFailedAt = CLOUD.pushFailedAt || Date.now();
+    CLOUD.pushRetries = (CLOUD.pushRetries||0) + 1;
+    if(CLOUD.pushRetries <= 8){
+      // tenta de novo automaticamente (rede instável, aba em segundo plano, etc.)
+      clearTimeout(CLOUD.pushRetryTimer);
+      CLOUD.pushRetryTimer = setTimeout(cloudPushNow, 5000);
+    } else {
+      toast('⚠️ Não foi possível salvar na nuvem há vários minutos. Verifique sua internet — suas alterações continuam salvas neste navegador.');
+    }
   }finally{
     CLOUD.pushing = false;
   }
@@ -1097,6 +1118,62 @@ function cloudPushDebounced(){
   if(!cloudEnabled()) return;
   clearTimeout(CLOUD.pushTimer);
   CLOUD.pushTimer = setTimeout(cloudPushNow, 900);
+}
+
+/* ---------------- histórico de versões (nunca apaga) ---------------- */
+async function loadCloudHistory(){
+  const box = document.getElementById('cloudHistoryBox');
+  const url = document.getElementById('cloudUrl').value.trim() || CLOUD.url;
+  if(!url){ box.innerHTML = '<div style="padding:14px;color:var(--ink-400);font-size:12.5px;">Configure e salve a URL primeiro.</div>'; return; }
+  box.innerHTML = '<div style="padding:14px;color:var(--ink-400);font-size:12.5px;">Carregando…</div>';
+  try{
+    const res = await fetch(url + '?action=history&limit=200&t=' + Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const out = await res.json();
+    if(out && out.error) throw new Error(out.error);
+    const versions = out.versions || [];
+    if(versions.length===0){
+      box.innerHTML = '<div style="padding:14px;color:var(--ink-400);font-size:12.5px;">Nenhuma versão salva ainda.</div>';
+      return;
+    }
+    box.innerHTML = versions.map((v,i)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;${i>0?'border-top:1px solid var(--line);':''}font-size:12.6px;">
+        <div>
+          <div style="font-weight:700;">${fmtDate(v.updatedAt)} ${i===0?'<span class="tag apto" style="margin-left:6px;">mais recente</span>':''}</div>
+          <div style="color:var(--ink-400);">por ${esc(v.updatedBy||'—')} · ${v.tamanhoKB||'?'} KB</div>
+        </div>
+        <button class="btn small ${i===0?'ghost':''}" data-restore-version="${esc(v.fileId)}" data-restore-date="${esc(fmtDate(v.updatedAt))}" ${i===0?'disabled':''}>Restaurar</button>
+      </div>`).join('');
+    box.querySelectorAll('[data-restore-version]').forEach(b=>b.addEventListener('click', ()=>restoreCloudVersion(b.dataset.restoreVersion, b.dataset.restoreDate)));
+  }catch(err){
+    box.innerHTML = '<div style="padding:14px;color:#b3261e;font-size:12.5px;">Erro ao carregar histórico: '+esc(String(err.message||err))+'</div>';
+  }
+}
+
+async function restoreCloudVersion(fileId, dateLabel){
+  if(!guardEdit()){ toast('Ative o modo de edição (senha) para restaurar uma versão'); return; }
+  if(!confirm(`Restaurar a versão de ${dateLabel}?\n\nIsso vai substituir TODOS os dados atuais (colaboradores, competências, quiz, sugestões) pelos dados salvos naquele momento. Nada é apagado do histórico — se precisar, dá para voltar à versão atual depois, do mesmo jeito.`)) return;
+  const url = CLOUD.url;
+  try{
+    toast('Restaurando…');
+    const res = await fetch(url + '?action=version&id=' + encodeURIComponent(fileId) + '&t=' + Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const out = await res.json();
+    if(out && out.error) throw new Error(out.error);
+    const restored = JSON.parse(out.data);
+    if(!restored || !restored.employees){ toast('Versão inválida, não foi possível restaurar.'); return; }
+    STATE = restored;
+    if(!STATE.quizBanks) STATE.quizBanks = {};
+    if(!STATE.quizResults) STATE.quizResults = [];
+    if(!STATE.feedbacks) STATE.feedbacks = [];
+    saveState(); // salva local e já envia como uma NOVA versão para a nuvem (não sobrescreve o histórico, só adiciona)
+    populateFilterSelects();
+    renderAll();
+    closeModal('modalCloud');
+    toast('✅ Versão de ' + dateLabel + ' restaurada com sucesso');
+  }catch(err){
+    toast('Erro ao restaurar: ' + (err.message||err));
+  }
 }
 
 async function startCloudPolling(){
@@ -2548,7 +2625,9 @@ function bindStaticListeners(){
     document.getElementById('cloudUserName').value = CLOUD.user||'';
     document.getElementById('cloudStatusMsg').textContent = cloudEnabled() ? 'Conectado. Alterações são salvas na nuvem automaticamente.' : 'Ainda não conectado — configure a URL do Apps Script abaixo.';
     openModal('modalCloud');
+    if(cloudEnabled()) loadCloudHistory();
   });
+  document.getElementById('btnCloudHistoryRefresh').addEventListener('click', loadCloudHistory);
   document.getElementById('btnCloudTest').addEventListener('click', async ()=>{
     const url = document.getElementById('cloudUrl').value.trim();
     const msg = document.getElementById('cloudStatusMsg');
