@@ -993,7 +993,7 @@ const CLOUD_CFG_KEY = 'gestamp_matriz_cloud_cfg_v1';
 // Script, basta atualizar essa constante e publicar de novo no GitHub.
 const DEFAULT_CLOUD_URL = 'https://script.google.com/macros/s/AKfycbyo3QgYxv7sCtxTXIJRW0AIDwhW68RDOHZNRnBh6LdGb8k76W5EVQEmMAQ3JYA05Xn4-A/exec';
 
-let CLOUD = { url:null, user:'', lastPulledAt:null, lastPullOk:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false, pushRetries:0, pushFailedAt:null, pushRetryTimer:null };
+let CLOUD = { url:null, user:'', lastPulledAt:null, lastPullOk:null, pushTimer:null, pollTimer:null, pulling:false, pushing:false, pushRetries:0, pushFailedAt:null, pushRetryTimer:null, lastSyncedServerTime:null };
 
 function loadCloudCfg(){
   try{
@@ -1041,25 +1041,31 @@ async function cloudPull(isInitial){
     if(out && out.data){
       hadRemoteData = true;
       const remote = JSON.parse(out.data);
-      const remoteTime = out.updatedAt ? new Date(out.updatedAt).getTime() : 0;
-      const localTime = STATE.meta.lastUpdate ? new Date(STATE.meta.lastUpdate).getTime() : 0;
+      const remoteTime = out.updatedAt || '';
+      // Em vez de comparar com o relógio do próprio aparelho (que pode "parecer"
+      // mais novo mesmo sem ter essa atualização — foi a causa de atualizações
+      // sumindo entre celular e PC), comparamos com a ÚLTIMA VERSÃO DA NUVEM que
+      // este aparelho já viu. Se é uma versão diferente da que já vimos, e o
+      // conteúdo realmente mudou, adotamos ela — não importa o relógio local.
+      const jaViuEssaVersao = remoteTime && remoteTime === CLOUD.lastSyncedServerTime;
       const remoteIsDifferent = JSON.stringify(remote) !== JSON.stringify(STATE);
-      if(remoteTime > localTime && remote && remote.employees && remoteIsDifferent){
+      if(!jaViuEssaVersao && remote && remote.employees && remoteIsDifferent){
         STATE = remote;
         if(!STATE.quizBanks) STATE.quizBanks = {};
         if(!STATE.quizResults) STATE.quizResults = [];
         if(!STATE.feedbacks) STATE.feedbacks = [];
+        STATE.meta.lastUpdate = remoteTime || STATE.meta.lastUpdate;
         localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
         safe(renderAll, 'sincronização (dados remotos)');
         document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
         toast('☁️ Dados atualizados por outro colaborador');
-      } else if(remoteTime > localTime){
-        // O servidor tem um carimbo mais novo, mas o conteúdo é idêntico
-        // (provavelmente o eco do que este mesmo aparelho acabou de enviar).
-        // Só alinha o relógio local, sem recarregar a tela nem avisar.
-        STATE.meta.lastUpdate = out.updatedAt;
+      } else if(!jaViuEssaVersao){
+        // Conteúdo idêntico (provavelmente o eco do que este mesmo aparelho
+        // acabou de enviar) — só alinha o relógio local, sem recarregar a tela.
+        if(remoteTime) STATE.meta.lastUpdate = remoteTime;
         localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
       }
+      if(remoteTime) CLOUD.lastSyncedServerTime = remoteTime;
     }
     setSyncBadge('online', 'Online');
     CLOUD.lastPullOk = true;
@@ -1090,6 +1096,7 @@ async function cloudPushNow(){
       if(out && out.error) serverError = out.error;
       if(out && out.updatedAt){
         STATE.meta.lastUpdate = out.updatedAt;
+        CLOUD.lastSyncedServerTime = out.updatedAt;
         localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
       }
     }catch(parseErr){ /* resposta sem JSON válido, ignora */ }
