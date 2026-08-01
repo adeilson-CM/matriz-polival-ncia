@@ -252,9 +252,35 @@ table.matrix tbody tr:hover td.emp-col{background:#eef3fb;}
 body.edit-locked .edit-only{opacity:.45;}
 #btnToggleEdit{font-weight:700;}
 #btnToggleEdit.unlocked{background:#e3f7e8;border-color:#bfe8c9;color:#1f8a44;}
+
+/* ---------- VIEW LOCK SCREEN ---------- */
+.view-lock-screen{
+  position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,var(--navy-950),var(--navy-900) 60%,var(--navy-800));
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.view-lock-card{background:#fff;border-radius:16px;padding:36px 32px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center;}
+.view-lock-card .brand-mark{width:56px;height:56px;margin:0 auto 16px;border-radius:12px;background:#fff;padding:6px;box-sizing:border-box;box-shadow:0 1px 2px rgba(13,21,38,.1);}
+.view-lock-card .brand-mark img{width:100%;height:100%;object-fit:contain;}
+.view-lock-card h2{margin:0 0 6px;font-size:18px;font-weight:800;color:var(--ink-900);}
+.view-lock-card p{margin:0 0 20px;font-size:12.6px;color:var(--ink-400);}
+.view-lock-card input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;text-align:center;letter-spacing:1px;}
+.view-lock-card .btn{width:100%;margin-top:12px;justify-content:center;}
+.view-lock-card .vl-error{color:#b3261e;font-size:12px;margin-top:10px;min-height:16px;}
 </style>
 </head>
 <body>
+
+<!-- ============ TELA DE BLOQUEIO (senha para visualizar o app) ============ -->
+<div class="view-lock-screen" id="viewLockScreen">
+  <div class="view-lock-card">
+    <div class="brand-mark"><img src="data:image/png;base64,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" id="vlLogo" alt="Gestamp"></div>
+    <h2>🔒 Matriz de Competências</h2>
+    <p>Digite a senha para acessar — Logística · Gestamp Taubaté</p>
+    <input id="vlPassword" type="password" placeholder="Senha" autocomplete="off">
+    <button class="btn primary" id="btnVlEntrar">Entrar</button>
+    <div class="vl-error" id="vlError"></div>
+  </div>
+</div>
 
 <div class="app">
   <!-- SIDEBAR -->
@@ -837,6 +863,21 @@ body.edit-locked .edit-only{opacity:.45;}
         <label>Alterar senha de edição</label>
         <input id="cfgNewPass" type="password" placeholder="Deixe em branco para manter a atual">
       </div>
+
+      <div style="border-top:1px solid #e4e9f2;margin:16px 0 12px 0;"></div>
+
+      <div class="form-row edit-only">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="cfgRequireViewPass" style="width:16px;height:16px;">
+          🔒 Exigir senha para visualizar o app (bloqueia acesso casual)
+        </label>
+      </div>
+      <div class="form-row edit-only">
+        <label>Senha de visualização</label>
+        <input id="cfgViewPass" type="password" placeholder="Deixe em branco para manter a atual, se já configurada">
+      </div>
+      <div class="hint edit-only" style="margin-bottom:14px;">Essa senha é só pra ABRIR o app (diferente da senha de edição). Não é uma segurança de verdade — quem souber mexer no código-fonte do navegador ainda consegue ver o conteúdo, mas evita acesso casual de quem só tem o link.</div>
+
       <div class="eval-cat">
         <h4>Legenda dos níveis</h4>
         <div class="eval-row"><span class="skname"><span class="tag na" style="background:var(--lvl0);color:#7d8697;">0</span> Não avaliado</span></div>
@@ -921,6 +962,8 @@ function loadState(){
       if(!st.quizBanks) st.quizBanks = {};
       if(!st.quizResults) st.quizResults = [];
       if(!st.feedbacks) st.feedbacks = [];
+      if(!st.settings) st.settings = {threshold:3, minAptos:2, editPassword:null};
+      if(st.settings.viewPassword === undefined) st.settings.viewPassword = null;
       return st;
     }catch(e){ /* fallthrough */ }
   }
@@ -930,7 +973,7 @@ function seedToState(){
   return {
     employees: SEED.employees.map(e=>({...e, vals:{...e.vals}})),
     skills: SEED.skills.map(s=>({...s})),
-    settings: {threshold:3, minAptos:2, editPassword:null},
+    settings: {threshold:3, minAptos:2, editPassword:null, viewPassword:null},
     quizBanks: {},
     quizResults: [],
     feedbacks: [],
@@ -2704,6 +2747,8 @@ function bindStaticListeners(){
   // settings
   document.getElementById('btnSettings').addEventListener('click', ()=>{
     document.getElementById('cfgNewPass').value = '';
+    document.getElementById('cfgViewPass').value = '';
+    document.getElementById('cfgRequireViewPass').checked = !!STATE.settings.viewPassword;
     openModal('modalSettings');
   });
   document.getElementById('btnSaveSettings').addEventListener('click', ()=>{
@@ -2714,6 +2759,18 @@ function bindStaticListeners(){
     if(newPass){
       if(newPass.length<4){ toast('A nova senha deve ter ao menos 4 caracteres'); return; }
       STATE.settings.editPassword = newPass;
+    }
+    const requireView = document.getElementById('cfgRequireViewPass').checked;
+    if(!requireView){
+      STATE.settings.viewPassword = null;
+    } else {
+      const vp = document.getElementById('cfgViewPass').value;
+      if(vp){
+        if(vp.length<4){ toast('A senha de visualização deve ter ao menos 4 caracteres'); return; }
+        STATE.settings.viewPassword = vp;
+      } else if(!STATE.settings.viewPassword){
+        toast('Defina uma senha de visualização'); return;
+      }
     }
     saveState();
     closeModal('modalSettings');
@@ -2797,8 +2854,43 @@ function bindStaticListeners(){
   document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', (ev)=>{ if(ev.target===o) o.classList.remove('show'); }));
 }
 
+const VIEW_UNLOCK_KEY = 'gestamp_matriz_view_unlocked_v1';
+
 function init(){
+  document.getElementById('btnVlEntrar').addEventListener('click', tryUnlockView);
+  document.getElementById('vlPassword').addEventListener('keydown', (ev)=>{ if(ev.key==='Enter') tryUnlockView(); });
+
   STATE = loadState();
+  if(STATE.settings.viewPassword && sessionStorage.getItem(VIEW_UNLOCK_KEY) !== '1'){
+    showViewLockScreen();
+    return; // só continua depois de digitar a senha certa
+  }
+  continueInit();
+}
+
+function showViewLockScreen(){
+  const screen = document.getElementById('viewLockScreen');
+  screen.style.display = 'flex';
+  const input = document.getElementById('vlPassword');
+  input.value = '';
+  document.getElementById('vlError').textContent = '';
+  setTimeout(()=>input.focus(), 50);
+}
+
+function tryUnlockView(){
+  const input = document.getElementById('vlPassword');
+  if(input.value === STATE.settings.viewPassword){
+    try{ sessionStorage.setItem(VIEW_UNLOCK_KEY, '1'); }catch(e){}
+    document.getElementById('viewLockScreen').style.display = 'none';
+    continueInit();
+  } else {
+    document.getElementById('vlError').textContent = 'Senha incorreta';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function continueInit(){
   safe(applyDefaultQuizBankOnce, 'banco de perguntas padrão');
   document.getElementById('lastUpdate').textContent = fmtDate(STATE.meta.lastUpdate);
   document.getElementById('cfgThreshold').value = STATE.settings.threshold;
